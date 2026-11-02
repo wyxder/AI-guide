@@ -1,0 +1,32 @@
+{
+  "string": [
+    {
+      "name": "app_name",
+      "value": "旅行家Pro"
+    },
+    {
+      "name": "module_desc",
+      "value": "多模态AI数字人导游与智慧运营平台"
+    },
+    {
+      "name": "ability_desc",
+      "value": "旅行家Pro游客伴游端"
+    },
+    {
+      "name": "perm_location_reason",
+      "value": "用于景区定位、地图导览、路线规划与到点自动讲解（地理围栏提醒）"
+    },
+    {
+      "name": "perm_camera_reason",
+      "value": "用于VR即拍即识：拍摄文物/景点后由AI识别并生成讲解"
+    },
+    {
+      "name": "perm_mic_reason",
+      "value": "用于AI数字人语音问答的语音输入（语音转文字）"
+    },
+    {
+      "name": "perm_bg_reason",
+      "value": "用于伴游FM讲解音频的后台持续播放与锁屏控制"
+    }
+  ]
+}

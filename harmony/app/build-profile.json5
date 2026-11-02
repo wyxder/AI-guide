@@ -1,0 +1,33 @@
+{
+  "app": {
+    // signingConfigs 留空：本地调试请先在 DevEco Studio 中
+    // File → Project Structure → Signing Configs 自动注册调试证书；
+    // 发布证书（.cer）与 Profile（.p7b）在 AppGallery Connect 创建后填入。
+    "signingConfigs": [],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "compatibleSdkVersion": "5.0.0(12)", // HarmonyOS NEXT, API 12 起步
+        "runtimeOS": "HarmonyOS",
+        "targetSdkVersion": "5.0.0(12)"
+      }
+    ],
+    "buildModeSet": [
+      { "name": "debug" },
+      { "name": "release" }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": ["default"]
+        }
+      ]
+    }
+  ]
+}
