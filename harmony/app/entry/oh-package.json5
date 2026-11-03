@@ -1,10 +1,10 @@
 {
-  "name": "entry",
-  "version": "1.0.0",
-  "description": "旅行家Pro 鸿蒙入口模块（WebView 壳 + JSBridge 原生能力代理）",
-  "main": "",
-  "author": "traveler-pro",
-  "license": "MIT",
-  "dependencies": {},
-  "devDependencies": {}
+  name: "entry",
+  version: "1.0.0",
+  description: "旅行家Pro 鸿蒙入口模块（WebView 壳 + JSBridge 原生能力代理）",
+  main: "",
+  author: "traveler-pro",
+  license: "MIT",
+  dependencies: {},
+  devDependencies: {},
 }
