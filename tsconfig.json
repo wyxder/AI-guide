@@ -32,5 +32,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "src/lib/live2d/src", "src/lib/live2d/Framework"]
+  "exclude": ["node_modules", "harmony", "src/lib/live2d/src", "src/lib/live2d/Framework"]
 }
