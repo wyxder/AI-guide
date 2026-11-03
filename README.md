@@ -26,6 +26,7 @@
 - 🔗 **MCP生态互通**：行业首个景区场景的 MCP 协议实现，7个标准工具打通智能体生态
 - ⚡ **端到端 &lt;1.8s**：SSE流式输出 + 三级降级容灾（StepFun→DeepSeek→本地Embedding）
 - 🌐 **PWA离线支持**：Service Worker 缓存策略，弱网环境下核心功能可用
+- 📱 **鸿蒙端方案**：ArkTS/ArkUI 一多部署 + 元服务卡片 + 分布式跨端接力，详见 [鸿蒙.md](./鸿蒙.md)
 
 ---
 
@@ -83,22 +84,60 @@
 | **Service Worker** | PWA离线缓存，弱网环境核心功能可用 |
 | **Vercel Cron** | 每日定时数据归档与情感分析任务 |
 
+### 📱 鸿蒙端技术方案（HarmonyOS NEXT）
+
+面向鸿蒙生态的端侧技术适配方案，完整说明见 [鸿蒙.md](./鸿蒙.md)。
+
+| 分类 | 核心技术 | 对应能力 |
+| :--- | :--- | :--- |
+| **应用框架与UI** | ArkTS + ArkUI 声明式开发、一多部署 | 普通/银发/童趣三模式自适应界面、全链路无障碍 |
+| **AI多模态交互** | Core Vision Kit + Core Speech Kit | VR即拍即识、语音提问、数字人语音播报 |
+| **分布式协同** | 分布式软总线、跨端迁移、分布式数据对象 | 手机—平板—车机导览接力、断点续游 |
+| **元服务与卡片** | 元服务（原子化服务）+ 万能卡片 | 免安装景区入口、客流与推荐景点桌面卡片 |
+| **位置与地图** | Location Kit + Map Kit | 智能路线规划、地理围栏与偏航提醒 |
+
+> 说明：仓库已包含独立的 [harmony/](./harmony/README.md) 鸿蒙适配工程（WebView 壳方案，详见 [鸿蒙1.md](./鸿蒙1.md)），与 Web 项目完全隔离；上表为鸿蒙端技术方案与后续原生适配方向。
+
 ---
 
 ## 📁 目录结构
 
 ```
 AI-guide/
+├── harmony/                            # 鸿蒙端适配工程（HarmonyOS NEXT，与 Web 项目隔离）
+│   ├── app/                            # DevEco Studio 工程（API 12+）
+│   │   ├── AppScope/app.json5          # 应用级配置（包名、版本、图标）
+│   │   ├── build-profile.json5         # 构建、签名与产品配置
+│   │   ├── hvigorfile.ts               # 工程级构建脚本
+│   │   └── entry/                      # 主 HAP 模块
+│   │       ├── hvigorfile.ts           # 模块级构建脚本
+│   │       ├── oh-package.json5        # 模块依赖声明
+│   │       └── src/main/
+│   │           ├── module.json5        # 模块与权限声明
+│   │           ├── ets/
+│   │           │   ├── entryability/EntryAbility.ets   # 应用入口 Ability
+│   │           │   ├── config/ApiConfig.ets            # H5 地址与接口配置
+│   │           │   └── pages/Index.ets                 # 鸿蒙首页（WebView 容器）
+│   │           └── resources/base/     # 颜色/字符串/页面路由资源
+│   ├── web-bridge/bridge.js            # H5 ↔ ArkTS 双向通信桥
+│   ├── sync-resources.ps1              # public/ 静态资源同步到鸿蒙 rawfile
+│   └── README.md                       # 鸿蒙工程说明与隔离声明
+│
 ├── src/
 │   ├── app/                            # Next.js App Router 路由层
 │   │   ├── page.tsx                    # 欢迎落地页（高保真沉浸式动画）
-│   │   ├── layout.tsx                  # 根布局（SDK Provider、字体注入、SW注册）
-│   │   ├── globals.css                 # 全局样式与CSS变量（主题系统）
+│   │   ├── layout.tsx                  # 根布局（Provider、字体、SW注册）
+│   │   ├── globals.css                 # 全局样式与主题变量
+│   │   ├── opengraph-image.tsx         # 社交分享图（OG）
+│   │   ├── twitter-image.tsx           # 社交分享图（Twitter）
 │   │   ├── home/                       # 🏠 游客端首页 (HomeScreen)
-│   │   ├── spots/                      # 📍 景点列表 & 详情页
+│   │   ├── spots/                      # 📍 景点列表
+│   │   │   └── [id]/                   # 景点详情页
 │   │   ├── qa/                         # 🤖 AI数字人问答交互中心
 │   │   ├── routes/                     # 🗺️ 游览行程规划
+│   │   │   └── [id]/                   # 路线详情页
 │   │   ├── profile/                    # 👤 个人资料与足迹中心
+│   │   │   └── history/                # 浏览历史页面
 │   │   ├── search/                     # 🔍 景区全局模糊检索
 │   │   ├── vr-recognize/               # 📷 VR即拍即识导览模块
 │   │   ├── fm/                         # 🎵 景区FM语音广播
@@ -106,85 +145,112 @@ AI-guide/
 │   │   ├── login/                      # 🔐 安全登录入口
 │   │   ├── ai-settings/                # ⚙️ AI个性化模式设置
 │   │   ├── admin/                      # 🖥️ B端管理后台
-│   │   │   ├── page.tsx                # 可视化数据大屏看板
+│   │   │   ├── page.tsx                # 数据大屏看板
 │   │   │   ├── analytics/              # 运营数据趋势详情
 │   │   │   ├── knowledge/              # 知识库管理（RAG上传解析）
 │   │   │   ├── spots/                  # 景点信息管理(CRUD)
-│   │   │   └── avatar/                 # 数字人装扮配置
+│   │   │   ├── avatar/                 # 数字人装扮配置
+│   │   │   └── login/                  # 管理员登录
 │   │   │
 │   │   └── api/                        # Next.js 后端 API 路由
-│   │       ├── qa/                     # 智能对话、TTS、STT、会话、反馈
-│   │       ├── spots/                  # 景点查询、详情、图像识别
-│   │       ├── routes/                 # 行程获取与智能路线生成
+│   │       ├── qa/                     # chat(SSE)、tts、stt、sessions、feedback、avatars、avatar-active
+│   │       ├── spots/                  # 列表、详情、评分、recognize（图像识别）
+│   │       ├── routes/                 # 列表、详情、generate（AI路线生成）
 │   │       ├── search/                 # 全局模糊检索服务
-│   │       ├── user/                   # 个人信息、足迹、偏好、收藏
-│   │       ├── admin/                  # B端管理专有接口组
+│   │       ├── fm/audio/               # 景区FM音频流
+│   │       ├── siliconflow/            # 语音 ASR / TTS 代理
+│   │       ├── user/                   # profile、preferences、favorites、visits、greeting
+│   │       ├── admin/                  # analytics各维度、knowledge、spots、avatar、qrcode
 │   │       ├── upload/                 # 文件上传服务
-│   │       ├── notifications/cron/     # Vercel Cron 定时任务
+│   │       ├── notifications/          # test、cron/daily-digest（Vercel Cron）
 │   │       └── mcp/                    # MCP协议端点（GET/POST/DELETE）
 │   │
 │   ├── components/                     # 公共 UI 组件
-│   │   ├── layout/                     # LayoutShell 响应式布局、Navigation导航
-│   │   ├── screens/                    # 核心业务大组件（17个主场景）
+│   │   ├── layout/                     # LayoutShell 响应式布局、Navigation、TopBar
+│   │   ├── screens/                    # 核心业务大组件（16个主场景）
 │   │   ├── ui/                         # 基础UI原子组件
 │   │   │   ├── DigitalAvatar.tsx       # SVG数字人（5种情绪状态）
 │   │   │   ├── Live2DViewer.tsx        # Live2D模型渲染器
 │   │   │   ├── CameraRecognize.tsx     # VR拍照识别组件
 │   │   │   ├── StoryModePlayer.tsx     # 故事模式播放器
 │   │   │   ├── PosterGenerator.tsx     # 海报生成器
+│   │   │   ├── QRCodePanel.tsx         # 景点二维码面板
+│   │   │   ├── AvatarSelectorModal.tsx # 数字人形象切换
 │   │   │   └── ...                     # 其他基础组件
 │   │   ├── notifications/              # 消息通知系统
-│   │   └── user-profile/               # 用户资料卡片
+│   │   └── user-profile/               # 用户资料卡片与同步
 │   │
 │   ├── lib/                            # 公共服务库
-│   │   ├── api/                        # API工具（RAG、限流、请求封装）
+│   │   ├── api/                        # API工具
+│   │   │   ├── request.ts              # 统一请求封装
 │   │   │   ├── embedding.ts            # 向量嵌入 + 余弦相似度计算
-│   │   │   ├── deepseek.ts             # DeepSeek API封装
 │   │   │   ├── rate-limit.ts           # IP速率限制器
+│   │   │   ├── stepfun.ts              # StepFun调用封装
+│   │   │   ├── xfyun-tts.ts            # 讯飞语音合成
 │   │   │   └── user-profile.ts         # 用户资料API
+│   │   ├── ai/                         # SiliconFlow 语音能力封装
+│   │   ├── auth/                       # 鉴权与 JWT 解密
 │   │   ├── db/                         # 数据库层
 │   │   │   ├── client.ts               # 数据库连接单例
-│   │   │   ├── schema/                 # 表结构定义（5个schema文件）
+│   │   │   ├── schema/                 # 表结构定义（6个schema文件）
 │   │   │   ├── queries/                # 数据查询封装
 │   │   │   ├── migrations/             # SQL迁移文件
 │   │   │   └── migrate.ts              # 迁移执行器
+│   │   ├── deepseek-v4/                # DeepSeek-V4 对话封装
+│   │   ├── live2d/                     # Cubism Core/Framework 与渲染管理器
 │   │   ├── mcp/                        # MCP服务端实现
 │   │   │   ├── server.ts               # MCP服务器构建器
 │   │   │   └── tools/                  # 7个MCP工具实现
-│   │   ├── auth.ts                     # Eazo SDK授权/JWT解密
-│   │   └── data/                       # 静态预置数据
+│   │   ├── stepfun/                    # StepFun 对话
+│   │   ├── stepfun-audio/              # ASR / TTS
+│   │   ├── stepfun-vision/             # 图像识别
+│   │   ├── data/                       # 静态预置景点数据
+│   │   ├── protocol.ts                 # 协议与类型定义
+│   │   └── scenic-image.ts             # 景点图片映射
 │   │
+│   ├── config/                         # 预留配置目录
 │   ├── utils/                          # 基础辅助函数
 │   └── instrumentation.ts              # Next.js运行时初始化
 │
-├── public/                             # 静态资源
+├── public/                             # 静态资源（约460个文件）
 │   ├── sentio/                         # Live2D资源
 │   │   ├── core/                       # Cubism Core渲染引擎
 │   │   ├── characters/free/            # 10+免费角色模型
 │   │   └── backgrounds/                # 动态/静态背景素材
-│   ├── image/                          # 图片资源
+│   ├── images/spots/                   # 景点图片（按景点ID命名）
+│   ├── image/                          # 通用图片素材
 │   ├── background/                     # 城市背景图
 │   ├── uploads/                        # 用户上传文件
 │   ├── sw.js                           # Service Worker脚本
-│   └── manifest.json                   # PWA应用清单
+│   ├── offline.html                    # 离线兜底页
+│   ├── manifest.json                   # PWA应用清单
+│   └── icon-192.png / icon-512.png     # PWA图标
 │
 ├── scripts/                            # 运维脚本
 │   ├── cleanup-demo.ts                 # Demo数据清理
 │   ├── sdk-watch.ts                    # SDK本地开发热同步
-│   └── search-knowledge.ts             # 知识库搜索测试
+│   ├── search-knowledge.ts             # 知识库搜索测试
+│   └── verify-scenic-images.mjs        # 景点图片完整性校验
 │
 ├── doc/                                # 项目文档
 │   ├── prd/                            # 产品需求文档
 │   ├── plan/                           # 商业计划书
 │   ├── ai/                             # AI方案文档
-│   └── images/                         # 文档截图
+│   ├── ok/                             # 作品说明、决赛与改进方案
+│   ├── ppt/                            # 演示文稿
+│   └── cool/                           # 创意脑暴
 │
+├── 鸿蒙.md                             # 鸿蒙（HarmonyOS）核心技术说明（5项技术）
+├── 鸿蒙1.md                            # Web→HarmonyOS 跨端适配完整方案
 ├── run.ps1                             # Windows一键启动脚本
 ├── drizzle.config.ts                   # Drizzle ORM配置
 ├── vercel.json                         # Vercel部署配置（含Cron）
 ├── seed.ts                             # 数据库种子填充
 ├── next.config.ts                      # Next.js配置
 ├── components.json                     # Shadcn组件配置
+├── postcss.config.mjs                  # PostCSS配置
+├── eslint.config.mjs                   # ESLint配置
+├── tsconfig.json                       # TypeScript配置
 ├── .env.example                        # 环境变量模板
 └── package.json                        # 项目依赖配置
 ```
