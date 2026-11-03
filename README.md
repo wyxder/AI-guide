@@ -86,7 +86,7 @@
 
 ### 📱 鸿蒙端技术方案（HarmonyOS NEXT）
 
-面向鸿蒙生态的端侧技术适配方案，完整说明见 [鸿蒙.md](./鸿蒙.md)。
+面向鸿蒙生态的端侧技术适配方案，完整说明见 [鸿蒙.md](./doc/鸿蒙.md)。
 
 | 分类 | 核心技术 | 对应能力 |
 | :--- | :--- | :--- |
@@ -96,7 +96,7 @@
 | **元服务与卡片** | 元服务（原子化服务）+ 万能卡片 | 免安装景区入口、客流与推荐景点桌面卡片 |
 | **位置与地图** | Location Kit + Map Kit | 智能路线规划、地理围栏与偏航提醒 |
 
-> 说明：仓库已包含独立的 [harmony/](./harmony/README.md) 鸿蒙适配工程（WebView 壳方案，详见 [鸿蒙1.md](./鸿蒙1.md)），与 Web 项目完全隔离；上表为鸿蒙端技术方案与后续原生适配方向。
+> 说明：仓库已包含独立的 [harmony/](./harmony/README.md) 鸿蒙适配工程（WebView 壳方案，详见 [鸿蒙1.md](./doc/鸿蒙1.md)），与 Web 项目完全隔离；上表为鸿蒙端技术方案与后续原生适配方向。
 
 ---
 
@@ -238,10 +238,10 @@ AI-guide/
 │   ├── ai/                             # AI方案文档
 │   ├── ok/                             # 作品说明、决赛与改进方案
 │   ├── ppt/                            # 演示文稿
-│   └── cool/                           # 创意脑暴
+│   ├── cool/                           # 创意脑暴
+│   ├── 鸿蒙.md                          # 鸿蒙（HarmonyOS）核心技术说明
+│   └── 鸿蒙1.md                         # Web→HarmonyOS 跨端适配方案
 │
-├── 鸿蒙.md                             # 鸿蒙（HarmonyOS）核心技术说明（5项技术）
-├── 鸿蒙1.md                            # Web→HarmonyOS 跨端适配完整方案
 ├── run.ps1                             # Windows一键启动脚本
 ├── drizzle.config.ts                   # Drizzle ORM配置
 ├── vercel.json                         # Vercel部署配置（含Cron）
