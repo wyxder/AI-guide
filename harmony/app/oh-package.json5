@@ -1,0 +1,12 @@
+{
+  // 工程级 oh-package（与 entry 模块级区分；无第三方依赖，避免 ohpm 联网拉取）
+  name: "travelerpro_harmony",
+  version: "1.0.0",
+  description: "旅行家Pro 鸿蒙工程（ArkWeb 壳 + JSBridge）",
+  main: "",
+  author: "traveler-pro",
+  license: "MIT",
+  dependencies: {},
+  devDependencies: {},
+  dynamicDependencies: {},
+}

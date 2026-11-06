@@ -13,6 +13,16 @@ const DOMAIN: number = 0x0001;
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     hilog.info(DOMAIN, TAG, 'EntryAbility onCreate');
+    // 跨端迁移到达端：源端 onContinue 打包的 sessionId 在此接管，由 Index.ets 页面加载后广播给 H5
+    const sid = want.parameters?.['sessionId'];
+    if (typeof sid === 'string' && sid.length > 0) {
+      AppStorage.setOrCreate('migratedSessionId', sid);
+    }
+    // 冷启动深链（卡片/碰一碰直接拉起）也携带 targetRoute
+    const route = want.parameters?.['targetRoute'];
+    if (typeof route === 'string' && route.length > 0) {
+      AppStorage.setOrCreate('cardTargetRoute', route);
+    }
   }
 
   onDestroy(): void {
@@ -20,10 +30,12 @@ export default class EntryAbility extends UIAbility {
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
-    windowStage.getMainWindowSync().then(async (win: window.Window) => {
-      // 1. 沉浸式：全屏布局，由页面自行处理避让
+    // 顺序化：先完成沉浸式/避让区初始化，再 loadContent，
+    // 避免页面先加载而 AppStorage 避让值未就绪（配合 Index.ets @StorageProp 仍会后续刷新，双重保险）
+    windowStage.getMainWindow().then(async (win: window.Window) => {
+      // 1. 沉浸式：全屏布局，由页面自行处理避让（Index.ets 原生 padding）
       await win.setWindowLayoutFullScreen(true);
-      // 2. 读取避让区（刘海/状态栏/导航条），换算 vp 存入 AppStorage
+      // 2. 读取避让区（刘海/状态栏/导航条），px 存入 AppStorage 供页面响应式消费
       const avoidArea = win.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM);
       AppStorage.setOrCreate('safeTopPx', avoidArea.topRect.height);
       AppStorage.setOrCreate('safeBottomPx', avoidArea.bottomRect.height);
@@ -36,14 +48,14 @@ export default class EntryAbility extends UIAbility {
       });
     }).catch((e: Error) => {
       hilog.error(DOMAIN, TAG, 'window setup failed: %{public}s', JSON.stringify(e));
-    });
-
-    windowStage.loadContent('pages/Index', (err) => {
-      if (err.code) {
-        hilog.error(DOMAIN, TAG, 'loadContent failed: %{public}s', JSON.stringify(err));
-        return;
-      }
-      hilog.info(DOMAIN, TAG, 'loadContent succeeded');
+    }).finally(() => {
+      windowStage.loadContent('pages/Index', (err) => {
+        if (err.code) {
+          hilog.error(DOMAIN, TAG, 'loadContent failed: %{public}s', JSON.stringify(err));
+          return;
+        }
+        hilog.info(DOMAIN, TAG, 'loadContent succeeded');
+      });
     });
   }
 
@@ -62,9 +74,13 @@ export default class EntryAbility extends UIAbility {
   }
 
   onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
-    // 桌面卡片 / 碰一碰 拉起时携带的目标页路由，转发给 H5
+    // 桌面卡片 / 碰一碰 拉起时携带的目标页路由，写入 AppStorage，
+    // 由 Index.ets @Watch('cardTargetRoute') 广播给 H5（需 module.json5 launchType=singleton）
     if (want.parameters && want.parameters['targetRoute']) {
       AppStorage.setOrCreate('cardTargetRoute', String(want.parameters['targetRoute']));
+    }
+    if (want.parameters && want.parameters['sessionId']) {
+      AppStorage.setOrCreate('migratedSessionId', String(want.parameters['sessionId']));
     }
   }
 }

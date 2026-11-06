@@ -8,10 +8,18 @@
     deliveryWithInstall: true,
     installationFree: false,
     pages: "$profile:main_pages",
+    // 摄像头挖孔区域视为非安全区，页面默认避让（API 12+）
+    metadata: [
+      {
+        name: "avoid_cutout",
+        value: "true",
+      },
+    ],
     abilities: [
       {
         name: "EntryAbility",
         srcEntry: "./ets/entryability/EntryAbility.ets",
+        launchType: "singleton", // 单例：卡片/碰一碰热启动拉起才能触发 onNewWant
         description: "$string:ability_desc",
         icon: "$media:app_icon",
         label: "$string:app_name",
@@ -74,6 +82,15 @@
         usedScene: {
           abilities: ["EntryAbility"],
           when: "always",
+        },
+      },
+      {
+        // 跨端迁移（手机→平板导览接力，continuable=true）必需，ACL 权限，上架需说明场景
+        name: "ohos.permission.DISTRIBUTED_DATASYNC",
+        reason: "$string:perm_dsync_reason",
+        usedScene: {
+          abilities: ["EntryAbility"],
+          when: "inuse",
         },
       },
     ],

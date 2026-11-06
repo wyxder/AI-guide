@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>离线模式 · 旅行家Pro</title>
+  <style>
+    /* 鸿蒙壳专用离线页：由 Index.ets 在连续加载失败后通过 loadUrl($rawfile) 载入。
+       重试按钮走原生代理 __nativeBridge__.retry()（javaScriptProxy 对所有页面注册，
+       含本 rawfile 页），由 ArkTS 侧重新加载线上 H5。 */
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: #FAF8F5; color: #3D3935;
+      font-family: "HarmonyOS Sans SC", PingFang SC, sans-serif;
+      padding: 0 32px; box-sizing: border-box; text-align: center;
+    }
+    .icon { font-size: 56px; margin-bottom: 16px; }
+    h1 { font-size: 20px; margin: 0 0 8px; }
+    p { font-size: 14px; color: #8A837C; line-height: 1.7; margin: 0 0 28px; }
+    .btn {
+      border: none; border-radius: 24px; padding: 12px 40px;
+      font-size: 16px; color: #fff; background: #B08B5F;
+      box-shadow: 0 6px 16px rgba(176, 139, 95, 0.3);
+    }
+    .btn:active { transform: scale(0.97); }
+  </style>
+</head>
+<body>
+  <div class="icon">🏮</div>
+  <h1>当前处于离线模式</h1>
+  <p>无法连接到旅行家Pro 云端服务。<br />请检查网络连接后点击重试，已缓存的页面数据不会丢失。</p>
+  <button class="btn" onclick="retryOnline()">重新连接</button>
+  <script>
+    function retryOnline() {
+      if (window.__nativeBridge__ && typeof window.__nativeBridge__.retry === 'function') {
+        window.__nativeBridge__.retry();
+      } else {
+        location.reload();
+      }
+    }
+  </script>
+</body>
+</html>

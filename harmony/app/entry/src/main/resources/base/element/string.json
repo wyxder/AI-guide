@@ -27,6 +27,10 @@
     {
       "name": "perm_bg_reason",
       "value": "用于伴游FM讲解音频的后台持续播放与锁屏控制"
+    },
+    {
+      "name": "perm_dsync_reason",
+      "value": "用于手机与平板之间的导览会话接力迁移（跨端流转）"
     }
   ]
 }

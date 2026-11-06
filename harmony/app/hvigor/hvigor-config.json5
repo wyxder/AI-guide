@@ -1,0 +1,8 @@
+{
+  // hvigor 构建系统配置（DevEco Studio 5.0 / API 12 标准 modelVersion 5.0.0）
+  modelVersion: "5.0.0",
+  dependencies: {},
+  execution: {},
+  logging: {},
+  optimization: {},
+}
