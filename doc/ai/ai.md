@@ -70,7 +70,7 @@ graph TD
 * **第四级 (最终兜底)**：若全部请求失败，接口将返回静态识别占位提示（如“听到您说：请带我参观一下这里的核心景点”），保障对话流不断开。
 
 ### 2. 语音合成 (TTS) 容灾逻辑
-* **第一级 (国内首选)**：首选调用 **SophNet `cosyvoice-v2`**（`longjiqi` 音色），接口以 SSE 流式返回 base64 音频帧，服务端逐帧解码拼接为 16k 单声道 MP3，直接驱动数字人口型与语音播放。
+* **第一级 (国内首选)**：首选调用 **SophNet `cosyvoice-v2`**（音色由 `SOPHNET_TTS_VOICE` 环境变量配置），接口以 SSE 流式返回 base64 音频帧，服务端逐帧解码拼接为 16k 单声道 MP3，直接驱动数字人口型与语音播放。
 * **第二级 (企业级)**：如果 SophNet 合成失败，自动降级至科大讯飞 WebAPI 引擎（`vcn: aisjinger`）。
 * **第三级 (高精多音色)**：讯飞欠费时，降级至 `ElevenLabs` 多语种大模型。
 * **第四级 (永久免费)**：全部商业 API 均失效时，采用 `Google Translate TTS` 公开接口进行实时合成。
@@ -201,7 +201,7 @@ export async function synthesizeSophNetSpeech(opts: SophNetTtsOptions): Promise<
         text: [opts.text],
         synthesis_param: {
           model: "cosyvoice-v2",
-          voice: "longjiqi",
+          voice: process.env.SOPHNET_TTS_VOICE!,
           format: "MP3_16000HZ_MONO_128KBPS",
           volume: 80,
           speechRate: opts.speechRate ?? 1,

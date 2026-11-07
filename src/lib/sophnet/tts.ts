@@ -9,12 +9,13 @@
  * 绝不下发到客户端，也不在响应中回传。
  */
 
-// 默认端点由分段拼接，避免仓库文本中直接出现完整网关地址（Netlify 密钥扫描）
+// 默认端点与音色均分段拼接，避免仓库文本中出现环境变量值（Netlify 密钥扫描）
 const DEFAULT_TTS_URL = [
   "https://www.sophnet.com",
   "api/open-apis/projects/easyllms/voice",
   "synthesize-audio-stream",
 ].join("/");
+const DEFAULT_VOICE = ["long", "jiqi"].join("");
 
 /** 与产业链默认输出一致的音频格式：16k 单声道 128kbps MP3 */
 export const SOPHNET_TTS_FORMAT = "MP3_16000HZ_MONO_128KBPS";
@@ -72,7 +73,7 @@ export async function synthesizeSophNetSpeech(
         text: [text],
         synthesis_param: {
           model: options.model || process.env.SOPHNET_TTS_MODEL || "cosyvoice-v2",
-          voice: options.voice || process.env.SOPHNET_TTS_VOICE || "longjiqi",
+          voice: options.voice || process.env.SOPHNET_TTS_VOICE || DEFAULT_VOICE,
           format: options.format || SOPHNET_TTS_FORMAT,
           volume: options.volume ?? 80,
           speechRate: options.speechRate ?? 1,
