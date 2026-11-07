@@ -2673,7 +2673,7 @@ export function ProfileScreen() {
                   <X className="w-4 h-4" />
                 </button>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/image/logo.png" alt="Logo" className="w-16 h-16 mx-auto rounded-2xl shadow-xl border-2 border-white/20 object-contain bg-white p-1" />
+                <img src="/image/logo.webp" alt="Logo" className="w-16 h-16 mx-auto rounded-2xl shadow-xl border-2 border-white/20 object-contain bg-white p-1" />
                 <h3 className="text-xl font-black tracking-wide mt-3" style={{ fontFamily: "var(--font-noto-serif)" }}>
                   旅行家Pro · 智慧文旅伴游系统
                 </h3>

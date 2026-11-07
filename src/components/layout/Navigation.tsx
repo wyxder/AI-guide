@@ -204,7 +204,7 @@ export function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 relative shadow-[0_4px_12px_rgba(79,111,82,0.15)] border border-[#E6E2D8]/50">
               <Image
-                src="/image/logo.png"
+                src="/image/logo.webp"
                 alt="Logo"
                 width={36}
                 height={36}

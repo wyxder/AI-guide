@@ -165,7 +165,7 @@ export default function LoginPage() {
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 shadow-md shadow-[#10a37f]/10 relative border border-neutral-800">
               <Image
-                src="/image/logo.png"
+                src="/image/logo.webp"
                 alt="Logo"
                 width={48}
                 height={48}
