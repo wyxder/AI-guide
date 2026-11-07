@@ -1,0 +1,4 @@
+[build.environment]
+  # GLM_THINKING is a non-sensitive on/off flag ("enabled"/"disabled"), not a secret.
+  # Its value is a common word that appears in docs and build output, which trips secrets scanning.
+  SECRETS_SCAN_OMIT_KEYS = "GLM_THINKING"
