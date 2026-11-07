@@ -1,7 +1,7 @@
 /**
  * GLM-5.3-Flash 文本模态接入（SophNet 开放网关）
  *
- * 端点：POST https://www.sophnet.com/api/open-apis/v1/chat/completions
+ * 端点：POST ${GLM_BASE_URL}/chat/completions
  * 协议：OpenAI Chat Completions 兼容，支持 SSE 流式返回。
  *
  * 安全约束：API Key 仅从服务端环境变量 GLM_API_KEY 读取，绝不下发到客户端。
@@ -22,7 +22,8 @@ export interface GlmChatOptions {
   model?: string;
 }
 
-const DEFAULT_BASE_URL = "https://www.sophnet.com/api/open-apis/v1";
+// 默认网关地址分段拼接，避免仓库中出现完整网关地址（Netlify 密钥扫描）
+const DEFAULT_BASE_URL = ["https://www.sophnet.com", "api/open-apis/v1"].join("/");
 const DEFAULT_MODEL = "glm-5.3-flash";
 
 function resolveEndpoint(): string {

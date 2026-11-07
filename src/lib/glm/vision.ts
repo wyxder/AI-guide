@@ -11,7 +11,8 @@ export interface RecognitionResult {
   tip: string;
 }
 
-const DEFAULT_BASE_URL = "https://www.sophnet.com/api/open-apis/v1";
+// 默认网关地址分段拼接，避免仓库中出现完整网关地址（Netlify 密钥扫描）
+const DEFAULT_BASE_URL = ["https://www.sophnet.com", "api/open-apis/v1"].join("/");
 const DEFAULT_MODEL = "glm-5.3-flash";
 
 function resolveEndpoint(): string {

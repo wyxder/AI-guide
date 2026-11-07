@@ -95,7 +95,7 @@ graph TD
 export async function glmChat(options: GlmChatOptions) {
   const { messages, temperature = 0.7, max_tokens, stream = false } = options;
   const apiKey = process.env.GLM_API_KEY;
-  const baseUrl = (process.env.GLM_BASE_URL || "https://www.sophnet.com/api/open-apis/v1").replace(/\/$/, "");
+  const baseUrl = process.env.GLM_BASE_URL!.replace(/\/$/, "");
 
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
@@ -126,7 +126,7 @@ export async function glmChat(options: GlmChatOptions) {
 // src/lib/glm/vision.ts
 export async function recognizeImageWithGlm(base64Data: string, mimeType: string, contextSpot?: string) {
   const apiKey = process.env.GLM_API_KEY;
-  const baseUrl = (process.env.GLM_BASE_URL || "https://www.sophnet.com/api/open-apis/v1").replace(/\/$/, "");
+  const baseUrl = process.env.GLM_BASE_URL!.replace(/\/$/, "");
 
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
@@ -193,7 +193,7 @@ export async function transcribeAudioWithStepFun(file: File): Promise<string> {
 export async function synthesizeSophNetSpeech(opts: SophNetTtsOptions): Promise<Uint8Array> {
   const apiKey = process.env.SOPHNET_API_KEY; // 仅服务端读取
   const res = await fetch(
-    "https://www.sophnet.com/api/open-apis/projects/easyllms/voice/synthesize-audio-stream",
+    process.env.SOPHNET_TTS_URL!,
     {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },

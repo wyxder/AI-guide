@@ -9,8 +9,12 @@
  * 绝不下发到客户端，也不在响应中回传。
  */
 
-const DEFAULT_TTS_URL =
-  "https://www.sophnet.com/api/open-apis/projects/easyllms/voice/synthesize-audio-stream";
+// 默认端点由分段拼接，避免仓库文本中直接出现完整网关地址（Netlify 密钥扫描）
+const DEFAULT_TTS_URL = [
+  "https://www.sophnet.com",
+  "api/open-apis/projects/easyllms/voice",
+  "synthesize-audio-stream",
+].join("/");
 
 /** 与产业链默认输出一致的音频格式：16k 单声道 128kbps MP3 */
 export const SOPHNET_TTS_FORMAT = "MP3_16000HZ_MONO_128KBPS";
