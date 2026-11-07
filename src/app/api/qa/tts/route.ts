@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { synthesizeSpeech } from "@/lib/api/xfyun-tts";
-import { synthesizeSpeechWithStepFun } from "../../../../lib/stepfun-audio/tts";
-import { synthesizeSiliconFlowSpeech } from "@/lib/ai/siliconflow-audio";
+import { synthesizeSophNetSpeech } from "@/lib/sophnet/tts";
+
+/** speechRate/pitch 前端以 100 为基准，换算为 cosyvoice-v2 的 0.5~2 倍率 */
+function toRate(value: number | undefined, fallback: number): number {
+  if (!value || !Number.isFinite(value) || value <= 0) return fallback;
+  return Math.min(2, Math.max(0.5, value / 100));
+}
 
 // Helper to generate a valid 1-second WAV audio buffer as ultimate fallback for demo stability
 function createFallbackWavBuffer(): Buffer {
@@ -41,24 +46,23 @@ function createFallbackWavBuffer(): Buffer {
 async function processTts(text: string, options: { voiceStyle?: string; speechRate?: number; pitch?: number; ttsConfig?: any }) {
   const { voiceStyle, speechRate, pitch, ttsConfig } = options;
 
-  // 1. Try SiliconFlow FunAudioLLM/CosyVoice2-0.5B if API key is present
-  if (process.env.SILICONFLOW_API_KEY) {
+  // 1. SophNet CosyVoice-v2（AI 数字人导游主音色）
+  if (process.env.SOPHNET_API_KEY) {
     try {
-      const isMale = (typeof voiceStyle === "string" && (voiceStyle.startsWith("male") || voiceStyle.includes("male"))) ||
-                     (typeof options.ttsConfig?.voice === "string" && options.ttsConfig.voice.includes("male"));
-      const selectedVoice = isMale ? "fnlp/MOSS-TTSD-v0.5:alex" : "fnlp/MOSS-TTSD-v0.5:anna";
-
-      const audioBuffer = await synthesizeSiliconFlowSpeech({
-        input: text.slice(0, 500),
-        voice: selectedVoice,
-        response_format: "mp3",
-        stream: true,
+      const audioBuffer = await synthesizeSophNetSpeech({
+        text: text.slice(0, 500),
+        speechRate: toRate(speechRate, 1),
+        pitchRate: toRate(pitch, 1),
       });
       return new NextResponse(audioBuffer as any, {
-        headers: { "Content-Type": "audio/mpeg" },
+        headers: {
+          "Content-Type": "audio/mpeg",
+          "Content-Length": String(audioBuffer.byteLength),
+          "Cache-Control": "no-store",
+        },
       });
     } catch (err) {
-      console.error("[TTS Route] SiliconFlow CosyVoice2-0.5B failed, falling back:", err);
+      console.error("[TTS Route] SophNet CosyVoice-v2 failed, falling back:", err);
     }
   }
 

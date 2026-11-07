@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { db } from "@/lib/db/client";
 import { knowledgeDocs } from "@/lib/db/schema/admin";
 import { ai } from "@eazo/sdk";
-import { stepChat } from "@/lib/api/stepfun";
+import { glmChat } from "@/lib/glm/chat";
 import { z } from "zod";
 
 export function registerAskQuestion(server: McpServer, _userId: string) {
@@ -19,8 +19,7 @@ export function registerAskQuestion(server: McpServer, _userId: string) {
       const context = allDocs.map((d) => `[${d.category}] ${d.title}: ${d.content}`).join("\n\n");
       const systemPrompt = `你是翠玉景区的专属AI导览员小玉，基于以下知识库回答问题：\n\n${context}\n\n请用温暖亲切的语气回答，200字以内。`;
 
-      const response = await stepChat({
-        model: "step-3.7-flash",
+      const response = await glmChat({
         messages: [{ role: "system", content: systemPrompt }, { role: "user", content: question }],
         max_tokens: 500,
       });

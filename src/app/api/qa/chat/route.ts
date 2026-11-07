@@ -4,7 +4,7 @@ import { db } from "@/lib/db/client";
 import { knowledgeDocs, qaLogs } from "@/lib/db/schema/admin";
 import { chatSessions } from "@/lib/db/schema/user-data";
 import { ai } from "@eazo/sdk";
-import { stepChat } from "@/lib/api/stepfun";
+import { glmChat } from "@/lib/glm/chat";
 import { deepseekV4Chat } from "@/lib/deepseek-v4/chat";
 import { getUserPreferences } from "@/lib/db/queries/user-data";
 import { isRateLimited } from "@/lib/api/rate-limit";
@@ -192,15 +192,14 @@ async function getCachedKnowledgeDocs() {
           try {
             let result: any;
             try {
-              result = await deepseekV4Chat({
+              result = await glmChat({
                 messages,
                 stream: true,
                 max_tokens: 250,
-              }, agentConfig);
-            } catch (v4Err) {
-              console.warn("[DeepSeek-V4-Flash Stream Error, falling back to stepChat]", v4Err);
-              result = await stepChat({
-                model: "step-3.7-flash",
+              });
+            } catch (glmErr) {
+              console.warn("[GLM-5.3-Flash Stream Error, falling back to DeepSeek-V4-Flash]", glmErr);
+              result = await deepseekV4Chat({
                 messages,
                 stream: true,
                 max_tokens: 250,
@@ -264,6 +263,17 @@ async function getCachedKnowledgeDocs() {
     // ── Non-streaming (default) ─────────────────────────────────────────────
     let answer = "";
     try {
+      const glmRes = await glmChat({
+        messages: [
+          { role: "user", content: systemPrompt },
+          ...chatHistory,
+          { role: "user", content: question },
+        ],
+        stream: false,
+        max_tokens: 450,
+      });
+      answer = glmRes.choices?.[0]?.message?.content?.trim() ?? "";
+    } catch {
       const v4Res = await deepseekV4Chat({
         messages: [
           { role: "user", content: systemPrompt },
@@ -273,18 +283,7 @@ async function getCachedKnowledgeDocs() {
         stream: false,
         max_tokens: 450,
       }, agentConfig);
-      answer = v4Res.choices?.[0]?.message?.content?.trim() ?? "";
-    } catch {
-      const result = await stepChat({
-        model: "step-3.7-flash",
-        messages: [
-          { role: "user", content: systemPrompt },
-          ...chatHistory,
-          { role: "user", content: question },
-        ],
-        max_tokens: 400,
-      }, agentConfig);
-      answer = result.choices?.[0]?.message?.content?.trim() ?? "小玉暂时无法回答，请稍后再试。";
+      answer = v4Res.choices?.[0]?.message?.content?.trim() ?? "小玉暂时无法回答，请稍后再试。";
     }
 
     // Async: increment daily QA counter and sentiment count

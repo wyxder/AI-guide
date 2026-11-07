@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
 import { spots } from "@/lib/db/schema/spots";
-import { stepChat } from "@/lib/api/stepfun";
+import { glmChat } from "@/lib/glm/chat";
 import { eq } from "drizzle-orm";
 
 interface SpotItem {
@@ -143,8 +143,7 @@ ${spotListStr}
     };
 
     try {
-      const response = await stepChat({
-        model: "step-3.7-flash",
+      const response = await glmChat({
         messages: [{ role: "user", content: prompt }],
         max_tokens: 400,
       });

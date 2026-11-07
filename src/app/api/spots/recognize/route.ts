@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ai } from "@eazo/sdk";
-import { recognizeImageWithStepFun } from "@/lib/stepfun-vision/recognize";
+import { recognizeImageWithGlm } from "@/lib/glm/vision";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,13 +15,13 @@ export async function POST(request: NextRequest) {
     const base64 = Buffer.from(arrayBuffer).toString("base64");
     const mimeType = imageFile.type || "image/jpeg";
 
-    // 1. Try StepFun step-3.7-flash model if key is present
-    if (process.env.STEP_API_KEY) {
+    // 1. Try GLM-5.3-Flash vision model if key is present
+    if (process.env.GLM_API_KEY) {
       try {
-        const result = await recognizeImageWithStepFun(base64, mimeType, contextSpot);
+        const result = await recognizeImageWithGlm(base64, mimeType, contextSpot);
         return NextResponse.json(result);
-      } catch (stepError) {
-        console.error("[Recognize Route] StepFun step-3.7-flash vision recognition failed, falling back:", stepError);
+      } catch (glmError) {
+        console.error("[Recognize Route] GLM-5.3-Flash vision recognition failed, falling back:", glmError);
       }
     }
 
