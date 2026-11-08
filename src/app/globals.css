@@ -517,12 +517,25 @@ html[data-accessibility-mode="child"] .avatar-glow {
   scrollbar-width: none !important;
 }
 
-/* 隐藏 Netlify 免费套餐注入的右下角 "Powered by Netlify" 徽标 */
-.netlify-badge,
-#netlify-badge,
-div[data-netlify-badge],
-iframe[src*="netlify"],
-a[href*="netlify.com"][target="_blank"] {
+/* 隐藏 Netlify 免费套餐注入的右下角 HUD / "Powered by Netlify" 徽标
+   线上注入节点：.nl-wrap 容器 + #nl-badge 按钮 + #nl-card 弹层等（nl- 前缀） */
+.nl-wrap,
+.nl-badge,
+#nl-badge,
+.nl-card,
+#nl-card,
+.nl-popover,
+#nl-pop,
+.nl-mini,
+#nl-mini,
+.nl-tip,
+#nl-tip,
+#nl-hud-frame,
+#nl-badge-frame,
+[id^="nl-"],
+[class^="nl-"],
+[class*=" nl-"],
+script[data-nf-variant] {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
