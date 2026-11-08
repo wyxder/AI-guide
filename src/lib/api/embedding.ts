@@ -25,7 +25,7 @@ function getDeterministicEmbedding(text: string): number[] {
 
 export async function getEmbedding(text: string): Promise<number[]> {
   const apiKey = process.env.EAZO_PRIVATE_KEY;
-  const baseURL = `${process.env.EAZO_PLATFORM_API_BASE || "https://eazo.ai"}/v1`;
+  const baseURL = `${process.env.EAZO_PLATFORM_API_BASE || ""}/v1`;
 
   if (!apiKey || !text) {
     return getDeterministicEmbedding(text);

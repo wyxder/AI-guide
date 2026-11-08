@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     let apiKey = process.env.EAZO_PRIVATE_KEY;
-    let baseURL = `${process.env.EAZO_PLATFORM_API_BASE || "https://eazo.ai"}/v1`;
+    let baseURL = `${process.env.EAZO_PLATFORM_API_BASE || ""}/v1`;
 
     if (asrConfig && asrConfig.engine === "whisper" && asrConfig.apiKey) {
       apiKey = asrConfig.apiKey;

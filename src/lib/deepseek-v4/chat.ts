@@ -1,6 +1,6 @@
 /**
  * DeepSeek-V4-Flash API Client Integration
- * Base URL: https://ai.dxkp.com/v1
+ * Base URL: configured via DEEPSEEK_V4_BASE_URL env var
  * Model: DeepSeek-V4-Flash
  */
 
@@ -25,11 +25,11 @@ export async function deepseekV4Chat(options: ChatOptions, customAgent?: any) {
   } = options;
 
   const apiKey = process.env.DEEPSEEK_V4_API_KEY;
-  const baseUrl = (process.env.DEEPSEEK_V4_BASE_URL || "https://ai.dxkp.com/v1").replace(/\/$/, "");
+  const baseUrl = (process.env.DEEPSEEK_V4_BASE_URL || "").replace(/\/$/, "");
   const endpoint = `${baseUrl}/chat/completions`;
 
-  if (!apiKey) {
-    throw new Error("DEEPSEEK_V4_API_KEY is not configured in environment variables.");
+  if (!apiKey || !baseUrl) {
+    throw new Error("DEEPSEEK_V4_API_KEY / DEEPSEEK_V4_BASE_URL is not configured in environment variables.");
   }
 
   const headers = {

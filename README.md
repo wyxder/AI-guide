@@ -451,7 +451,7 @@ EAZO_PRIVATE_KEY="your_eazo_private_key"
 
 # === DeepSeek 主模型（可选，SDK内置也可） ===
 DEEPSEEK_API_KEY="your_deepseek_api_key"
-DEEPSEEK_PROXY_URL="https://eazo.ai/api/innoreation/v1/proxy"
+DEEPSEEK_PROXY_URL="your_deepseek_proxy_url"
 
 # === StepFun 视觉模型（可选） ===
 STEP_API_KEY="your_stepfun_api_key"
