@@ -383,14 +383,6 @@ export default function LoginPage() {
               <Sparkles className="w-4 h-4" />
               游客一键登录 · 立即体验
             </button>
-
-            <button
-              onClick={() => handleQuickLogin("wyxcode@qq.com", "123456")}
-              disabled={loading}
-              className="w-full py-2.5 rounded-xl border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-98 transition-all text-xs font-semibold text-neutral-600 flex items-center justify-center gap-1 cursor-pointer"
-            >
-              管理后台一键登录(测试用)
-            </button>
           </div>
 
         </div>

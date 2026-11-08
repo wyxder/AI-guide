@@ -7,7 +7,7 @@
 
 export const XIAOMEI_AVATAR_STYLE = "xingyun_xiaomei";
 
-export const XIAOMEI_AVATAR_IMAGE = "/xingyun/xiaomei.jpg";
+export const XIAOMEI_AVATAR_IMAGE = "/images/小美.png";
 
 export const XIAOMEI_AVATAR_PRESET = {
   name: "小美 · 星云智能体",

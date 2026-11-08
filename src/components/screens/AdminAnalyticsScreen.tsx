@@ -39,7 +39,6 @@ const AVATAR_PRESETS = [
   { style: XIAOMEI_AVATAR_STYLE, name: "小美", short: "小美", role: "XIAOMEI · 星云具身智能体" },
   { style: "live2d_Chitose", name: "Chitose", short: "Chitose", role: "LIVE2D · 千岁" },
   { style: "live2d_Hiyori", name: "Hiyori", short: "Hiyori", role: "LIVE2D · 日和" },
-  { style: "live2d_Mao", name: "Mao", short: "Mao", role: "LIVE2D · 猫" },
   { style: "live2d_Shizuku", name: "Shizuku", short: "Shizuku", role: "LIVE2D · 雫" },
 ];
 

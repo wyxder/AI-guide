@@ -415,7 +415,7 @@ export function AdminAvatarScreen() {
                         }}
                         className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#1A4F62] focus:border-[#22D3EE] bg-[#06121B] text-[#DDF4FF]"
                       >
-                        {["HaruGreeter", "Haru", "Kei", "Chitose", "Epsilon", "Hibiki", "Hiyori", "Izumi", "Mao", "Rice", "Shizuku", "Tsumiki"].map((name) => (
+                        {["HaruGreeter", "Haru", "Kei", "Chitose", "Epsilon", "Hibiki", "Hiyori", "Izumi", "Rice", "Shizuku", "Tsumiki"].map((name) => (
                           <option key={name} value={name}>
                             {name}
                           </option>

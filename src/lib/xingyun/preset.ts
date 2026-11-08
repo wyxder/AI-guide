@@ -7,7 +7,7 @@
 
 export const XINGYUN_AVATAR_STYLE = "xingyun_shixian";
 
-export const XINGYUN_AVATAR_IMAGE = "/xingyun/shixian.webp";
+export const XINGYUN_AVATAR_IMAGE = "/images/李白.png";
 
 export const XINGYUN_AVATAR_PRESET = {
   name: "诗仙 · 李白",

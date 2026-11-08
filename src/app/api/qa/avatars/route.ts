@@ -96,17 +96,6 @@ const DEFAULT_PRESETS = [
     imageUrl: "/sentio/characters/free/Izumi/Izumi.png"
   },
   {
-    name: "Mao (Live2D)",
-    avatarStyle: "live2d_Mao",
-    voiceStyle: "lively",
-    speechRate: 100,
-    pitch: 95,
-    greeting: "哈罗！我是真央，欢迎来到这里！有什么好玩的尽管问我吧！",
-    isDefault: false,
-    isActive: true,
-    imageUrl: "/sentio/characters/free/Mao/Mao.png"
-  },
-  {
     name: "Rice (Live2D)",
     avatarStyle: "live2d_Rice",
     voiceStyle: "lively",
@@ -155,7 +144,7 @@ function withXingyunFirst<T extends { avatarStyle: string }>(list: T[]): T[] {
   return [...first, ...rest];
 }
 
-// 已下线的真人照片形象名称，用于清理历史数据
+// 已下线的形象名称，用于清理历史数据
 const REMOVED_PRESET_NAMES = [
   "AI数字人",
   "职场专家",
@@ -167,6 +156,7 @@ const REMOVED_PRESET_NAMES = [
   "潮流酷哥",
   "阳光运动男",
   "儒雅书生",
+  "Mao (Live2D)",
 ];
 
 export async function GET() {
@@ -178,13 +168,14 @@ export async function GET() {
     const hasRemovedPresets = configs.some(c => REMOVED_PRESET_NAMES.includes(c.name));
     const hasXingyunPreset = configs.some(c => c.avatarStyle === XINGYUN_AVATAR_PRESET.avatarStyle);
     const hasXiaomeiPreset = configs.some(c => c.avatarStyle === XIAOMEI_AVATAR_PRESET.avatarStyle);
-    // 小美缩略图等预设信息变更后，旧数据需按最新预设重建
-    const hasStaleXiaomei = configs.some(
-      c => c.avatarStyle === XIAOMEI_AVATAR_PRESET.avatarStyle && c.imageUrl !== XIAOMEI_AVATAR_PRESET.imageUrl,
-    );
+    // 「诗仙」「小美」缩略图等预设信息变更后，旧数据需按最新预设重建
+    const hasStaleStarcloud = configs.some((c) => {
+      const preset = STARCLOUD_PRESETS.find((p) => p.avatarStyle === c.avatarStyle);
+      return preset ? c.imageUrl !== preset.imageUrl : false;
+    });
     
     // Seed database if configurations are incomplete, outdated, using URL avatarStyle, or default is not Hiyori
-    if (configs.length < ALL_PRESETS.length || !hasHiyoriDefault || hasRemovedPresets || !hasXingyunPreset || !hasXiaomeiPreset || hasStaleXiaomei || (configs[0] && configs[0].avatarStyle.startsWith("http"))) {
+    if (configs.length < ALL_PRESETS.length || !hasHiyoriDefault || hasRemovedPresets || !hasXingyunPreset || !hasXiaomeiPreset || hasStaleStarcloud || (configs[0] && configs[0].avatarStyle.startsWith("http"))) {
       await db.delete(avatarConfigs);
       await db.insert(avatarConfigs).values(ALL_PRESETS);
       configs = await db.select().from(avatarConfigs).where(eq(avatarConfigs.isActive, true)).orderBy(desc(avatarConfigs.createdAt));
