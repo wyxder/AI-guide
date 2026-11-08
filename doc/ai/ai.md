@@ -15,7 +15,7 @@
 | | **景区运营建议分析**<br>(Analytics Recommendations) | B 端管理后台定期提取近 40 条游客问答日志，通过 AI 进行痛点提取，并生成 3-4 条改进方案。 | **主用**：`glm-5.3-flash` | - 同上（单次分析约消耗 2k~4k Tokens） |
 | | **知识库文本向量化**<br>(Text Embedding) | 管理员上传 txt/pdf/docx 景区文档时，自动切段并生成向量，存储至 PostgreSQL 以实现 Hybrid RAG 语义相似度匹配。 | **主用**：`text-embedding-3-small` (1536维)<br>**保底备选**：本地哈希与余弦相似度保底 | - **text-embedding-3-small**：$0.02/M Tokens (约 ¥0.15/M)<br>- **阿里 text-embedding-v2**：¥0.70/M Tokens |
 | **视觉模态**<br>(Vision) | **VR 即拍即识**<br>(Multimodal Recognition) | 游客拍照或上传风光/展品图片，AI 在 1 秒内提取主体名称、深度历史故事与拍摄建议并输出 JSON。 | **主用**：`glm-5.3-flash` (智谱 GLM / SophNet 网关)<br>**降级备选**：`deepseek.v3.1` (Eazo SDK) | - **glm-5.3-flash**：同一文本/视觉统一计费入口<br>- **DeepSeek V3 (视觉版)**：极低价格<br>- **GPT-4o-mini**：低解像度约 $0.00085/张，高解像度约 $0.00285/张 |
-| **音频模态**<br>(Audio) | **语音输入**<br>(ASR / STT) | 游客在 C 端按住麦克风进行语音提问，录音数据传入后台转换为文字。 | **主用**：`stepaudio-2.5-asr` (阶跃星辰)<br>**多级降级**：`Vosk` (本地离线), OpenAI `Whisper-1` | - **Vosk**：¥0 (本地部署)<br>- **stepaudio-2.5-asr**：¥0.01 / 分钟 (高采样率识别)<br>- **Whisper-1**：$0.006 / 分钟 (约 ¥0.044 / 分钟) |
+| **音频模态**<br>(Audio) | **语音输入**<br>(ASR / STT) | 游客在 C 端按住麦克风进行语音提问，录音数据传入后台转换为文字。 | **主用**：`TeleAI/TeleSpeechASR` (SiliconFlow)<br>**多级降级**：`Vosk` (本地离线), `stepaudio-2.5-asr` (阶跃星辰), OpenAI `Whisper-1` | - **TeleAI/TeleSpeechASR**：按 SiliconFlow 平台计费<br>- **Vosk**：¥0 (本地部署)<br>- **stepaudio-2.5-asr**：¥0.01 / 分钟<br>- **Whisper-1**：$0.006 / 分钟 (约 ¥0.044 / 分钟) |
 | | **语音输出**<br>(TTS) | 将大模型生成的答复文本转换为语音流，用于驱动 Live2D 数字人面部及口型同步。 | **主用**：`cosyvoice-v2` (SophNet)<br>**多级降级**：科大讯飞流式 TTS, `ElevenLabs`, `Google Translate TTS` | - **cosyvoice-v2**：按 SophNet 平台实时计费（输出 16k 单声道 128kbps MP3）<br>- **科大讯飞流式 TTS**：约合 ¥10.00 - ¥20.00 / 百万字<br>- **ElevenLabs**：约 $0.15 - $0.30 / 万字符 |
 
 ---
@@ -42,9 +42,10 @@
 ```mermaid
 graph TD
     subgraph STT 语音识别容灾
-        STT1[本地 Vosk 离线模型] -- 失败/无模型 --> STT2[StepFun stepaudio-2.5-asr API]
-        STT2 -- 失败 --> STT3[OpenAI Whisper-1 API]
-        STT3 -- 失败 --> STT4[静态提示文本/Web Speech API 降级]
+        STT1[SiliconFlow TeleAI/TeleSpeechASR] -- 失败/欠费 --> STT2[本地 Vosk 离线模型]
+        STT2 -- 失败/无模型 --> STT3[StepFun stepaudio-2.5-asr API]
+        STT3 -- 失败 --> STT4[OpenAI Whisper-1 API]
+        STT4 -- 失败 --> STT5[静态提示文本/Web Speech API 降级]
     end
 
     subgraph TTS 语音合成容灾
@@ -64,10 +65,11 @@ graph TD
 ```
 
 ### 1. 语音识别 (STT) 容灾逻辑
-* **第一级 (本地离线)**：使用本地轻量级开源 `Vosk` 模型（`models/vosk-model-cn`），提供零流量消耗、低延迟的近距离解析。
-* **第二级 (商业在线)**：如果未部署本地模型，优先调用 **阶跃星辰 `stepaudio-2.5-asr`** API。它基于 SSE 流式响应，能够提取高精度的中文普通话和地方口音。
-* **第三级 (海外备选)**：若阶跃星辰服务断开，自动降级切换至 `OpenAI Whisper-1` 全球网关。
-* **第四级 (最终兜底)**：若全部请求失败，接口将返回静态识别占位提示（如“听到您说：请带我参观一下这里的核心景点”），保障对话流不断开。
+* **第一级 (国内首选)**：优先调用 **SiliconFlow `TeleAI/TeleSpeechASR`**（配置 `SILICONFLOW_API_KEY` 即启用），multipart 上传录音文件，返回高准确率中文识别文本。
+* **第二级 (本地离线)**：若部署了本地轻量级开源 `Vosk` 模型（`models/vosk-model-cn`），提供零流量消耗、低延迟的近距离解析。
+* **第三级 (商业备选)**：再降级至 **阶跃星辰 `stepaudio-2.5-asr`** API（SSE 流式，支持普通话与地方口音）。
+* **第四级 (海外备选)**：自动降级切换至 `OpenAI Whisper-1` 网关（经 Eazo 代理）。
+* **第五级 (最终兜底)**：若全部请求失败，接口将返回静态识别占位提示（如“听到您说：请带我参观一下这里的核心景点”），保障对话流不断开。
 
 ### 2. 语音合成 (TTS) 容灾逻辑
 * **第一级 (国内首选)**：首选调用 **SophNet `cosyvoice-v2`**（音色由 `SOPHNET_TTS_VOICE` 环境变量配置），接口以 SSE 流式返回 base64 音频帧，服务端逐帧解码拼接为 16k 单声道 MP3，直接驱动数字人口型与语音播放。
@@ -154,8 +156,29 @@ export async function recognizeImageWithGlm(base64Data: string, mimeType: string
 }
 ```
 
-### 3. 音频模态 - ASR（`stepaudio-2.5-asr`）与 TTS（`cosyvoice-v2`）对接
-语音识别仍在 `src/lib/stepfun-audio/asr.ts` 中对接阶跃星辰；语音合成已迁移到独立能力目录 `src/lib/sophnet/tts.ts`，由 SophNet `cosyvoice-v2` 驱动，密钥统一从 `.env` 的 `SOPHNET_API_KEY` 读取，不下发到客户端。
+### 3. 音频模态 - ASR（`TeleAI/TeleSpeechASR`）与 TTS（`cosyvoice-v2`）对接
+语音识别首选在 `src/lib/ai/siliconflow-audio.ts` 中对接 SiliconFlow `TeleAI/TeleSpeechASR`（`transcribeSiliconFlowAudio`），密钥从 `.env` 的 `SILICONFLOW_API_KEY` 读取；阶跃星辰 `src/lib/stepfun-audio/asr.ts` 作为后续降级级保留。语音合成已迁移到独立能力目录 `src/lib/sophnet/tts.ts`，由 SophNet `cosyvoice-v2` 驱动，密钥统一从 `.env` 的 `SOPHNET_API_KEY` 读取，均不下发到客户端。
+
+```typescript
+// src/lib/ai/siliconflow-audio.ts
+export async function transcribeSiliconFlowAudio(
+  audioBuffer: Buffer | Uint8Array,
+  mimeType: string = "audio/wav",
+  fileName: string = "audio.wav"
+): Promise<string> {
+  const apiKey = process.env.SILICONFLOW_API_KEY; // 仅服务端读取
+  const formData = new FormData();
+  formData.append("file", new Blob([new Uint8Array(audioBuffer)], { type: mimeType }), fileName);
+  formData.append("model", "TeleAI/TeleSpeechASR");
+
+  const response = await fetch(`${process.env.SILICONFLOW_BASE_URL}/audio/transcriptions`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${apiKey}` },
+    body: formData,
+  });
+  // 返回 { text }；失败时由 /api/qa/stt 路由自动降级（Vosk → StepFun → Whisper）
+}
+```
 
 ```typescript
 // src/lib/stepfun-audio/asr.ts
