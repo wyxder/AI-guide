@@ -1,11 +1,11 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence, useDragControls } from "framer-motion";
+import { motion, AnimatePresence, useDragControls, useSpring, useMotionValueEvent } from "framer-motion";
 import {
   Compass, ArrowRight, Loader2, MapPin, Clock, ChevronLeft, ChevronRight,
   Share2, MessageSquare, ShieldAlert, Award, Search, Send,
-  Volume2, VolumeX, Eye, BookOpen, Navigation, Landmark, Sparkles,
-  X, Smile, Image as ImageIcon, Film, Mic, Menu, Bot, User, Glasses
+  Volume2, VolumeX, Eye, BookOpen, Navigation, Landmark, Sparkles, Check,
+  X, Smile, Image as ImageIcon, Film, Mic, Menu, Bot, User, Glasses, Maximize2, Minimize2
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -31,6 +31,14 @@ const INTERESTS = [
 ];
 
 const TRAVEL_EMOJIS = ["😊", "👍", "🗺️", "🌟", "📸", "🏛️", "🍜", "❤️", "✨", "🙌", "🚗", "🌸"];
+
+// AI 路线生成弹窗的四阶段进度
+const PROGRESS_STEPS = [
+  { threshold: 12, emoji: "🤖", label: "偏好解析" },
+  { threshold: 42, emoji: "📍", label: "空间测算" },
+  { threshold: 76, emoji: "🚗", label: "路网优化" },
+  { threshold: 95, emoji: "🎙️", label: "解说生成" },
+];
 
 const ROUTE_SPOT_DETAIL_ALIASES: Record<string, string> = {
   "故宫博物院": "北京故宫博物院",
@@ -250,6 +258,18 @@ export function RoutesScreen() {
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [progressPercent, setProgressPercent] = useState(0);
   const [progressStep, setProgressStep] = useState("");
+
+  // 进度数字随进度条平滑递增（避免百分比跳变）
+  const progressSpring = useSpring(0, { stiffness: 110, damping: 22, mass: 0.6 });
+  const [smoothPercent, setSmoothPercent] = useState(0);
+  useEffect(() => {
+    progressSpring.set(progressPercent);
+  }, [progressPercent, progressSpring]);
+  useMotionValueEvent(progressSpring, "change", (v) => {
+    const next = Math.round(v);
+    setSmoothPercent((prev) => (prev === next ? prev : next));
+  });
+  const displayPercent = progressPercent >= 100 ? 100 : smoothPercent;
   const [showRouteHistoryModal, setShowRouteHistoryModal] = useState(false);
   const [historyCategoryTab, setHistoryCategoryTab] = useState<string>("instagrammable");
 
@@ -266,6 +286,8 @@ export function RoutesScreen() {
   // VR 720° 全景漫游
   const [showVrPanorama, setShowVrPanorama] = useState(false);
   const [vrLoading, setVrLoading] = useState(true);
+  const [vrFullscreen, setVrFullscreen] = useState(false);
+  const vrCardRef = useRef<HTMLDivElement>(null);
 
   // AI Chat Panel
   const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([
@@ -314,6 +336,45 @@ export function RoutesScreen() {
       document.body.style.overflow = prevOverflow;
     };
   }, [showVrPanorama]);
+
+  // 全屏状态与浏览器同步（Esc 退出时也能正确复位）
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setVrFullscreen(document.fullscreenElement === vrCardRef.current);
+    };
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
+
+  const toggleVrFullscreen = () => {
+    // 已在浏览器原生全屏中：退出原生全屏
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+      setVrFullscreen(false);
+      return;
+    }
+    // 已处于铺满视口的预览态：点击还原
+    if (vrFullscreen) {
+      setVrFullscreen(false);
+      return;
+    }
+    // 先立即铺满视口（不依赖浏览器原生全屏，内嵌/自动化环境同样生效）
+    setVrFullscreen(true);
+    // 再尝试升级为浏览器原生全屏；失败则保持铺满视口的预览态
+    try {
+      vrCardRef.current?.requestFullscreen?.().catch(() => {});
+    } catch {
+      /* 忽略不支持原生全屏的环境 */
+    }
+  };
+
+  const closeVrPanorama = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+    setVrFullscreen(false);
+    setShowVrPanorama(false);
+  };
 
   // Map elements
   const mapRef = useRef<HTMLDivElement>(null);
@@ -986,6 +1047,8 @@ export function RoutesScreen() {
   const handleGenerateRoute = async () => {
     setGenerating(true);
     setActiveRoute(null);
+    progressSpring.set(0);
+    setSmoothPercent(0);
     setProgressPercent(12);
     setProgressStep("🤖 AI 智能引擎正在深度分析您的游玩偏好与包含景点...");
     setShowProgressModal(true);
@@ -1746,46 +1809,123 @@ export function RoutesScreen() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md pointer-events-auto"
+            className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-zinc-950/40 backdrop-blur-[2px] pointer-events-auto"
           >
+            {/* 背景漂浮的彩色光斑 */}
+            <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+              <div className="rainbow-aurora rainbow-aurora--a" />
+              <div className="rainbow-aurora rainbow-aurora--b" />
+            </div>
+
             <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 15 }}
+              initial={{ scale: 0.86, opacity: 0, y: 26 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 15 }}
-              transition={{ type: "spring", stiffness: 320, damping: 26 }}
-              className="w-full max-w-sm rounded-3xl p-6 bg-[#16201B] border border-white/20 shadow-2xl text-white space-y-5"
+              exit={{ scale: 0.9, opacity: 0, y: 16 }}
+              transition={{ type: "spring", stiffness: 300, damping: 24 }}
+              className="relative w-full max-w-md"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-[#D2A053]/20 border border-[#D2A053]/40 flex items-center justify-center flex-shrink-0">
-                  <Compass className="w-6 h-6 text-[#D2A053] animate-spin" style={{ animationDuration: "3s" }} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-base tracking-wide" style={{ fontFamily: "var(--font-noto-serif)" }}>
-                    AI 智能路线规划中
-                  </h3>
-                  <p className="text-xs text-white/50">大语言模型与空间地理算法融合分析</p>
-                </div>
-              </div>
+              {/* 卡片外发光 */}
+              <div className="absolute -inset-5 rounded-[42px] rainbow-glow opacity-50 blur-2xl" aria-hidden />
 
-              {/* Progress bar container */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center text-xs font-mono">
-                  <span className="text-[#D2A053] font-bold">规划进度</span>
-                  <span className="font-bold text-white">{progressPercent}%</span>
-                </div>
-                <div className="h-3 w-full bg-white/10 rounded-full overflow-hidden p-0.5 border border-white/10">
-                  <motion.div
-                    className="h-full bg-gradient-to-r from-[#D2A053] via-amber-400 to-emerald-400 rounded-full"
-                    initial={{ width: "0%" }}
-                    animate={{ width: `${progressPercent}%` }}
-                    transition={{ duration: 0.35, ease: "easeOut" }}
-                  />
-                </div>
-              </div>
+              <div className="relative rounded-[28px] overflow-hidden shadow-2xl">
+                {/* 旋转彩虹描边光晕 */}
+                <div className="absolute inset-[-45%] rainbow-ring" aria-hidden />
 
-              {/* Step message */}
-              <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-xs text-white/90 min-h-[50px] flex items-center leading-relaxed">
-                <span>{progressStep}</span>
+                {/* 白色主卡片 */}
+                <div className="relative m-[3px] rounded-[25px] bg-white p-6">
+                  <span className="rainbow-spark rainbow-spark--1" aria-hidden />
+                  <span className="rainbow-spark rainbow-spark--2" aria-hidden />
+                  <span className="rainbow-spark rainbow-spark--3" aria-hidden />
+
+                  <div className="relative flex items-center gap-3.5">
+                    <div className="relative w-14 h-14 flex-shrink-0">
+                      <div className="absolute inset-0 rounded-2xl rainbow-bar shadow-[0_12px_28px_-10px_rgba(196,113,237,0.9)]" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Compass className="w-7 h-7 text-white animate-spin" style={{ animationDuration: "3.4s" }} />
+                      </div>
+                      {/* 环绕光点 */}
+                      <div className="absolute -inset-1.5 animate-spin" style={{ animationDuration: "5s" }} aria-hidden>
+                        <span className="absolute left-1/2 top-0 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_10px_3px_rgba(255,255,255,0.95)]" />
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-base tracking-wide text-zinc-900" style={{ fontFamily: "var(--font-noto-serif)" }}>
+                        AI 智能路线规划中
+                      </h3>
+                      <p className="text-xs text-zinc-500 mt-0.5">大语言模型 × 空间地理算法融合分析</p>
+                    </div>
+                    <span className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-900 text-[10px] font-semibold tracking-wider text-white flex-shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#47e6b1] animate-pulse" />
+                      LIVE
+                    </span>
+                  </div>
+
+                  {/* 进度数字 */}
+                  <div className="mt-7 flex items-end justify-between">
+                    <span className="font-semibold text-[11px] tracking-[0.22em] uppercase text-zinc-400">Generating Route</span>
+                    <span className="rainbow-text text-4xl font-extrabold font-mono leading-none tracking-tight">{displayPercent}%</span>
+                  </div>
+
+                  {/* 彩虹流动进度条 */}
+                  <div className="mt-3 h-4 w-full rounded-full bg-zinc-100 border border-zinc-200/80 p-[3px] shadow-inner">
+                    <div className="relative h-full w-full rounded-full">
+                      <motion.div
+                        className="relative h-full rounded-full rainbow-progress-fill flex items-center justify-end"
+                        initial={{ width: "0%" }}
+                        animate={{ width: `${progressPercent}%` }}
+                        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                      >
+                        <span className="rainbow-sheen" aria-hidden />
+                        <span className="rainbow-head" aria-hidden />
+                      </motion.div>
+                    </div>
+                  </div>
+
+                  {/* 四阶段进度 */}
+                  <div className="mt-5 grid grid-cols-4 gap-1">
+                    {PROGRESS_STEPS.map((step, index) => {
+                      const nextThreshold = PROGRESS_STEPS[index + 1]?.threshold ?? 101;
+                      const isDone = progressPercent >= nextThreshold;
+                      const isActive = !isDone && progressPercent >= step.threshold;
+                      return (
+                        <div key={step.label} className="flex flex-col items-center gap-1.5">
+                          <div className={`w-9 h-9 rounded-2xl flex items-center justify-center text-sm transition-all duration-500 ${
+                            isDone
+                              ? "bg-zinc-900 text-white"
+                              : isActive
+                                ? "rainbow-bar text-white scale-105 shadow-[0_0_18px_-2px_rgba(196,113,237,0.9)]"
+                                : "bg-zinc-100 text-zinc-400"
+                          }`}>
+                            {isDone ? <Check className="w-4 h-4" /> : <span>{step.emoji}</span>}
+                          </div>
+                          <span className={`text-[10px] transition-colors duration-500 ${
+                            isActive ? "font-bold text-zinc-800" : isDone ? "text-zinc-500" : "text-zinc-400"
+                          }`}>
+                            {step.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* 当前步骤提示 */}
+                  <div className="mt-5 relative overflow-hidden rounded-2xl bg-zinc-50 border border-zinc-100 pl-4 pr-3.5 py-3 min-h-[52px] flex items-center gap-2.5">
+                    <span className="absolute inset-y-0 left-0 w-1 rainbow-bar rounded-r" aria-hidden />
+                    <Sparkles className="w-4 h-4 text-fuchsia-500 flex-shrink-0 animate-pulse" />
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={progressStep}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.25 }}
+                        className="text-xs text-zinc-700 leading-relaxed"
+                      >
+                        {progressStep}
+                      </motion.span>
+                    </AnimatePresence>
+                  </div>
+                </div>
               </div>
             </motion.div>
           </motion.div>
@@ -2051,19 +2191,28 @@ export function RoutesScreen() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setShowVrPanorama(false)}
-            className="fixed inset-0 z-[140] flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md"
+            onClick={closeVrPanorama}
+            className={`fixed inset-0 z-[140] flex items-center justify-center ${
+              vrFullscreen ? "bg-black p-0" : "bg-black/85 backdrop-blur-md p-3 sm:p-6"
+            }`}
           >
             <motion.div
+              ref={vrCardRef}
               initial={{ scale: 0.94, opacity: 0, y: 18 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.94, opacity: 0, y: 18 }}
               transition={{ type: "spring", stiffness: 300, damping: 28 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-5xl h-[85dvh] sm:h-[80vh] max-h-[900px] rounded-2xl sm:rounded-3xl bg-[#0F1412] border border-white/15 shadow-2xl flex flex-col overflow-hidden"
+              className={`flex flex-col overflow-hidden bg-[#0F1412] border-white/15 shadow-2xl ${
+                vrFullscreen
+                  ? "absolute inset-0 z-10 w-full h-full max-w-none max-h-none rounded-none border-0"
+                  : "w-full max-w-5xl h-[85dvh] sm:h-[80vh] max-h-[900px] rounded-2xl sm:rounded-3xl border"
+              }`}
             >
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 sm:px-5 border-b border-white/10 flex-shrink-0">
+              {/* Header（全屏预览时隐藏，让全景满屏；右上角保留浮动退出按钮） */}
+              <div className={`items-center justify-between px-4 py-3 sm:px-5 border-b border-white/10 flex-shrink-0 ${
+                vrFullscreen ? "hidden" : "flex"
+              }`}>
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="w-9 h-9 rounded-xl bg-violet-500/15 border border-violet-400/40 flex items-center justify-center flex-shrink-0">
                     <Glasses className="w-4.5 h-4.5 text-violet-300" />
@@ -2075,13 +2224,23 @@ export function RoutesScreen() {
                     <p className="text-[10px] text-white/50 mt-0.5 truncate">拖动画面或滑动屏幕，环视景区实景</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setShowVrPanorama(false)}
-                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/70 hover:text-white transition-colors cursor-pointer flex-shrink-0"
-                  aria-label="关闭 VR 全景"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={toggleVrFullscreen}
+                    className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/70 hover:text-white transition-colors cursor-pointer"
+                    aria-label={vrFullscreen ? "退出全屏" : "全屏预览"}
+                    title={vrFullscreen ? "退出全屏" : "全屏预览"}
+                  >
+                    {vrFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                  </button>
+                  <button
+                    onClick={closeVrPanorama}
+                    className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/70 hover:text-white transition-colors cursor-pointer"
+                    aria-label="关闭 VR 全景"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Panorama iframe */}
@@ -2103,6 +2262,27 @@ export function RoutesScreen() {
                   onLoad={() => setVrLoading(false)}
                   className="absolute inset-0 w-full h-full border-0"
                 />
+
+                {/* 全屏预览入口：浮于全景之上，点击即可放大到整屏 */}
+                {!vrFullscreen ? (
+                  <button
+                    onClick={toggleVrFullscreen}
+                    className="absolute bottom-4 right-4 z-20 flex items-center gap-1.5 px-3 py-2 rounded-full text-[11px] font-semibold text-white bg-black/45 hover:bg-black/65 backdrop-blur-md border border-white/20 shadow-lg transition-all cursor-pointer"
+                    aria-label="全屏预览 VR 全景"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                    全屏预览
+                  </button>
+                ) : (
+                  <button
+                    onClick={toggleVrFullscreen}
+                    className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-3 py-2 rounded-full text-[11px] font-semibold text-white bg-black/55 hover:bg-black/75 backdrop-blur-md border border-white/20 shadow-lg transition-all cursor-pointer"
+                    aria-label="退出全屏预览"
+                  >
+                    <Minimize2 className="w-3.5 h-3.5" />
+                    退出全屏
+                  </button>
+                )}
               </div>
             </motion.div>
           </motion.div>

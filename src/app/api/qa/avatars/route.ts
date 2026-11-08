@@ -140,8 +140,15 @@ const DEFAULT_PRESETS = [
   }
 ];
 
-// 追加「诗仙」魔珐星云具身智能体形象；原有 Live2D 形象与能力完全保留
-const ALL_PRESETS = [...DEFAULT_PRESETS, XINGYUN_AVATAR_PRESET];
+// 「诗仙」魔珐星云具身智能体排在首位；原有 Live2D 形象与能力完全保留
+const ALL_PRESETS = [XINGYUN_AVATAR_PRESET, ...DEFAULT_PRESETS];
+
+/** 返回列表时始终把「诗仙」置顶，原有形象顺序保持不变 */
+function withXingyunFirst<T extends { avatarStyle: string }>(list: T[]): T[] {
+  const first = list.filter((item) => item.avatarStyle === XINGYUN_AVATAR_PRESET.avatarStyle);
+  const rest = list.filter((item) => item.avatarStyle !== XINGYUN_AVATAR_PRESET.avatarStyle);
+  return [...first, ...rest];
+}
 
 // 已下线的真人照片形象名称，用于清理历史数据
 const REMOVED_PRESET_NAMES = [
@@ -173,7 +180,7 @@ export async function GET() {
       configs = await db.select().from(avatarConfigs).where(eq(avatarConfigs.isActive, true)).orderBy(desc(avatarConfigs.createdAt));
     }
     
-    return NextResponse.json(configs);
+    return NextResponse.json(withXingyunFirst(configs));
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Failed to fetch avatars" }, { status: 500 });
   }

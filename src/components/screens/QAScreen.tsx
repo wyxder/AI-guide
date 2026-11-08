@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Mic, MicOff, Send, Volume2, VolumeX,
+  Mic, Send, Volume2, VolumeX,
   History, X, ChevronUp, ChevronDown, Camera, Sparkles,
   Image as ImageIcon, User, Plus, Check
 } from "lucide-react";
@@ -34,10 +34,10 @@ const QUICK_PROMPTS = [
 ];
 
 const BG_PRESETS = [
-  { id: "beijing", label: "北京", url: "/background/北京.png" },
-  { id: "hangzhou", label: "杭州", url: "/background/杭州.png" },
+  { id: "beijing", label: "北京", url: "/background/北京.webp" },
+  { id: "hangzhou", label: "杭州", url: "/background/杭州.webp" },
   { id: "pavilion", label: "山景", url: "/images/spots/10024.webp" },
-  { id: "chongqing", label: "重庆", url: "/background/重庆.png" },
+  { id: "chongqing", label: "重庆", url: "/background/重庆.webp" },
 ];
 
 function getVoiceForOption(opt: VoiceOption): SpeechSynthesisVoice | null {
@@ -157,6 +157,19 @@ export function QAScreen() {
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [avatarState, setAvatarState] = useState<AvatarState>("idle");
   const [recording, setRecording] = useState(false);
+  const [recordSeconds, setRecordSeconds] = useState(0);
+  const voiceStartingRef = useRef(false);
+  // 语音识别提示统一使用固定 id，保证界面上同时只存在一条提示
+  const VOICE_TOAST_ID = "guide-voice-status";
+
+  useEffect(() => {
+    if (!recording) {
+      setRecordSeconds(0);
+      return;
+    }
+    const timer = window.setInterval(() => setRecordSeconds((s) => s + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [recording]);
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
   const [showSatisfaction, setShowSatisfaction] = useState(false);
@@ -224,7 +237,7 @@ export function QAScreen() {
   });
 
   // Background selection state
-  const [bgImage, setBgImage] = useState<string>("/background/北京.png");
+  const [bgImage, setBgImage] = useState<string>("/background/北京.webp");
   const [showBgMenu, setShowBgMenu] = useState(false);
 
   // 音色选择状态：默认 SophNet CosyVoice-v2 的龙小淳（温柔知性女声）
@@ -705,10 +718,9 @@ export function QAScreen() {
         setInput("（浏览器不支持录音）");
         return;
       }
-      toast.loading("正在开启麦克风…", { id: "mic-perm" });
+      toast.loading("正在开启麦克风…", { id: VOICE_TOAST_ID, duration: 8000 });
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      toast.dismiss("mic-perm");
-      toast.success("正在录音中，再次点击按钮可结束录音并发送");
+      toast.success("正在录音，再次点击按钮结束并发送", { id: VOICE_TOAST_ID, duration: 2500 });
 
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
@@ -728,25 +740,25 @@ export function QAScreen() {
         formData.append("file", audioBlob, "audio.webm");
 
         setInput("正在识别语音...");
-        const toastId = toast.loading("正在识别您的语音...");
+        toast.loading("正在识别您的语音...", { id: VOICE_TOAST_ID, duration: 12000 });
         try {
           const res = await request("/api/qa/stt", {
             method: "POST",
             body: formData,
           });
           const data = await res.json();
-          toast.dismiss(toastId);
+          toast.dismiss(VOICE_TOAST_ID);
           if (data.text) {
             setInput(data.text);
             sendMessage(data.text);
           } else {
-            toast.error("未识别到清晰语音");
+            toast.error("未识别到清晰语音", { id: VOICE_TOAST_ID, duration: 2500 });
             setInput("");
           }
         } catch (err) {
-          toast.dismiss(toastId);
+          toast.dismiss(VOICE_TOAST_ID);
           console.error("Whisper STT fallback error:", err);
-          toast.error("语音识别失败，请重试");
+          toast.error("语音识别失败，请重试", { id: VOICE_TOAST_ID, duration: 2500 });
           setInput("");
         }
       };
@@ -754,13 +766,18 @@ export function QAScreen() {
       mediaRecorder.start();
       setRecording(true);
     } catch (err: any) {
-      toast.dismiss("mic-perm");
+      toast.dismiss(VOICE_TOAST_ID);
       console.error("Mic access denied or error:", err);
-      toast.error("获取麦克风权限失败，请检查浏览器系统设置");
+      toast.error("获取麦克风权限失败，请检查浏览器系统设置", { id: VOICE_TOAST_ID, duration: 3000 });
     }
   };
 
   const toggleRecording = async () => {
+    // 防止快速连点重复启动，导致顶部出现多条提示
+    if (voiceStartingRef.current) return;
+    voiceStartingRef.current = true;
+    window.setTimeout(() => { voiceStartingRef.current = false; }, 600);
+
     if (recording) {
       recognitionManualStopRef.current = true;
       if (recognitionRef.current) {
@@ -770,7 +787,7 @@ export function QAScreen() {
         try { mediaRecorderRef.current.stop(); } catch {}
         setRecording(false);
       }
-      toast.info("已停止录音");
+      toast.info("已停止录音", { id: VOICE_TOAST_ID, duration: 1800 });
       return;
     }
 
@@ -789,7 +806,7 @@ export function QAScreen() {
 
         rec.onstart = () => {
           setRecording(true);
-          toast.success("正在聆听中，请说话…");
+          toast.success("正在聆听，请说话…", { id: VOICE_TOAST_ID, duration: 2500 });
         };
 
         rec.onresult = (e: any) => {
@@ -800,6 +817,7 @@ export function QAScreen() {
           if (result.isFinal) {
             recognitionManualStopRef.current = true;
             setRecording(false);
+            toast.dismiss(VOICE_TOAST_ID);
             try { rec.stop(); } catch {}
             sendMessage(txt);
           }
@@ -812,6 +830,7 @@ export function QAScreen() {
         rec.onerror = (e: any) => {
           console.warn("SpeechRecognition error, falling back to MediaRecorder:", e);
           setRecording(false);
+          toast.dismiss(VOICE_TOAST_ID);
           startMediaRecorderFallback();
         };
 
@@ -1007,9 +1026,44 @@ export function QAScreen() {
     </div>
   );
 
+  /* ── 语音识别状态条（全局仅一条，替代重复提示） ── */
+  const renderVoiceStatus = (dark = false) => (
+    <AnimatePresence>
+      {recording && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 6 }}
+          className="flex items-center gap-2 mb-2 px-1"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+          <span
+            className="text-[11px] font-semibold whitespace-nowrap flex-shrink-0"
+            style={{ color: dark ? "rgba(255,255,255,0.88)" : "#4F6F52" }}
+          >
+            正在聆听 · {String(Math.floor(recordSeconds / 60)).padStart(2, "0")}:{String(recordSeconds % 60).padStart(2, "0")}
+          </span>
+          <div
+            className="flex-1 h-[3px] rounded-full overflow-hidden"
+            style={{ background: dark ? "rgba(255,255,255,0.16)" : "#E6E2D8" }}
+          >
+            <motion.div
+              className="h-full rounded-full"
+              animate={{ width: `${Math.min(100, (recordSeconds / 15) * 100)}%` }}
+              transition={{ ease: "linear", duration: 0.9 }}
+              style={{ background: "linear-gradient(90deg,#34D399,#FBBF24,#F472B6,#8B5CF6)" }}
+            />
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
   /* ── Input bar (shared) ── */
   const renderInputBar = (dark = false) => (
-    <div className={`flex items-center gap-2`}>
+    <div>
+      {renderVoiceStatus(dark)}
+      <div className={`flex items-center gap-2`}>
       {/* Camera */}
       <motion.button type="button" whileTap={{ scale: 0.84 }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push("/vr-recognize?action=camera"); }}
         className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-md transition-all hover:brightness-105"
@@ -1027,22 +1081,41 @@ export function QAScreen() {
         className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 relative shadow-md transition-all hover:brightness-105"
         style={{
           background: recording
-            ? "linear-gradient(135deg,#EF4444,#DC2626)"
+            ? "linear-gradient(135deg,#FB7185 0%,#F43F5E 45%,#8B5CF6 100%)"
             : "linear-gradient(135deg,#10B981,#059669)",
           boxShadow: recording
-            ? "0 2px 8px rgba(220, 38, 38, 0.3)"
+            ? "0 0 0 3px rgba(244,63,94,0.20), 0 4px 16px rgba(139,92,246,0.42)"
             : "0 2px 8px rgba(5, 150, 105, 0.3)",
           border: "1.5px solid rgba(255, 255, 255, 0.25)",
           color: "white",
         }}>
         {recording && (
-          <motion.div animate={{ scale: [1, 1.8, 1], opacity: [0.5, 0, 0.5] }}
-            transition={{ duration: 0.9, repeat: Infinity }}
-            className="absolute inset-0 rounded-full"
-            style={{ background: "rgba(255,255,255,0.25)" }} />
+          <>
+            <motion.span
+              className="absolute inset-0 rounded-full border-2 pointer-events-none"
+              style={{ borderColor: "rgba(251,113,133,0.7)" }}
+              animate={{ scale: [1, 1.9], opacity: [0.7, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
+            />
+            <motion.span
+              className="absolute inset-0 rounded-full border-2 pointer-events-none"
+              style={{ borderColor: "rgba(139,92,246,0.6)" }}
+              animate={{ scale: [1, 1.9], opacity: [0.7, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut", delay: 0.55 }}
+            />
+          </>
         )}
         {recording ? (
-          <Mic className="w-4 h-4 relative z-10 animate-bounce text-white" />
+          <span className="relative z-10 flex items-end gap-[3px] h-4">
+            {[0, 1, 2].map((i) => (
+              <motion.span
+                key={i}
+                className="w-[3px] rounded-full bg-white"
+                animate={{ height: [6, 15, 8, 13, 6] }}
+                transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut", delay: i * 0.12 }}
+              />
+            ))}
+          </span>
         ) : (
           <Mic className="w-4 h-4 text-white" />
         )}
@@ -1079,6 +1152,7 @@ export function QAScreen() {
           </motion.button>
         ) : <div key="gap" className="w-10 h-10 flex-shrink-0" />}
       </AnimatePresence>
+      </div>
     </div>
   );
 
@@ -1286,6 +1360,8 @@ export function QAScreen() {
               </motion.button>
             ))}
           </div>
+          {/* 语音识别状态条：仅一条，替换原来重复的顶部提示 */}
+          {renderVoiceStatus(true)}
           {/* Input row: [Camera] [Mic] [Input pill] [Send/Camera] */}
           <div className="flex items-center gap-2.5">
             {/* Camera button — left of mic */}
@@ -1304,22 +1380,39 @@ export function QAScreen() {
               className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 relative shadow-lg transition-all hover:brightness-105"
               style={{
                 background: recording
-                  ? "linear-gradient(135deg,#EF4444,#DC2626)"
+                  ? "linear-gradient(135deg,#FB7185 0%,#F43F5E 45%,#8B5CF6 100%)"
                   : "linear-gradient(135deg,#10B981,#059669)",
                 boxShadow: recording
-                  ? "0 4px 14px rgba(220, 38, 38, 0.45)"
+                  ? "0 0 0 4px rgba(244,63,94,0.22), 0 6px 20px rgba(139,92,246,0.5)"
                   : "0 4px 14px rgba(5, 150, 105, 0.45)",
                 border: "1.5px solid rgba(255,255,255,0.25)",
               }}>
               {recording && (
-                <motion.div animate={{ scale: [1, 1.6, 1], opacity: [0.6, 0, 0.6] }}
-                  transition={{ duration: 0.9, repeat: Infinity }}
-                  className="absolute inset-0 rounded-full"
-                  style={{ background: "rgba(255,255,255,0.3)" }} />
+                <>
+                  <motion.span className="absolute inset-0 rounded-full border-2 pointer-events-none"
+                    style={{ borderColor: "rgba(251,113,133,0.75)" }}
+                    animate={{ scale: [1, 1.95], opacity: [0.75, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }} />
+                  <motion.span className="absolute inset-0 rounded-full border-2 pointer-events-none"
+                    style={{ borderColor: "rgba(139,92,246,0.65)" }}
+                    animate={{ scale: [1, 1.95], opacity: [0.75, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut", delay: 0.55 }} />
+                </>
               )}
-              {recording
-                ? <MicOff className="w-5 h-5 text-white relative z-10" />
-                : <Mic className="w-5 h-5 text-white" />}
+              {recording ? (
+                <span className="relative z-10 flex items-end gap-[3.5px] h-5">
+                  {[0, 1, 2].map((i) => (
+                    <motion.span
+                      key={i}
+                      className="w-[3.5px] rounded-full bg-white"
+                      animate={{ height: [7, 19, 10, 16, 7] }}
+                      transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut", delay: i * 0.12 }}
+                    />
+                  ))}
+                </span>
+              ) : (
+                <Mic className="w-5 h-5 text-white" />
+              )}
             </motion.button>
 
             {/* Text input pill */}

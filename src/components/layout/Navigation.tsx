@@ -17,9 +17,9 @@ import { toast } from "sonner";
 /* ─── C端标签 ─────────────────────────────────────────────── */
 const C_TABS = [
   { href: "/home", label: "首页", icon: Home },
-  { href: "/spots", label: "热门景点", icon: MapPin },
-  { href: "/qa", label: "AI数字人导游", icon: MessageCircle },
   { href: "/routes", label: "行程规划", icon: Navigation },
+  { href: "/qa", label: "AI数字人导游", icon: MessageCircle },
+  { href: "/spots", label: "热门景点", icon: MapPin },
   { href: "/profile", label: "我的", icon: User },
 ];
 
@@ -40,9 +40,9 @@ export function BottomTabBar() {
 
   const MOBILE_TABS = [
     { href: "/home", label: "首页", icon: Home },
-    { href: "/spots", label: "热门景点", icon: MapPin },
-    { href: "/qa", label: "AI数字人导游", icon: MessageCircle },
     { href: "/routes", label: "行程规划", icon: Navigation },
+    { href: "/qa", label: "AI数字人导游", icon: MessageCircle },
+    { href: "/spots", label: "热门景点", icon: MapPin },
     { href: "/profile", label: "我的", icon: User },
   ];
   const triggerHaptic = () => {

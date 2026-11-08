@@ -142,10 +142,12 @@ export function AvatarSelectorModal({
                       <img
                         src={
                           avatar.avatarStyle?.startsWith("live2d_")
-                            ? `/sentio/characters/free/${avatar.avatarStyle.replace("live2d_", "")}/${avatar.avatarStyle.replace("live2d_", "")}.png`
+                            ? `/sentio/characters/free/${avatar.avatarStyle.replace("live2d_", "")}/thumb.webp`
                             : avatar.imageUrl || avatar.avatarStyle
                         }
                         alt={avatar.name}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover"
                       />
                     )}
@@ -206,7 +208,7 @@ export function AvatarSelectorModal({
                     {isVideo ? (
                       <video src={avatar.avatarStyle} className="w-full h-full object-cover" />
                     ) : (
-                      <img src={avatar.imageUrl || avatar.avatarStyle} alt={avatar.name} className="w-full h-full object-cover" />
+                      <img src={avatar.imageUrl || avatar.avatarStyle} alt={avatar.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                     )}
 
                     {/* Gradient Overlay */}

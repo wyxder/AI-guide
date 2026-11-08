@@ -542,3 +542,226 @@ script[data-nf-variant] {
   pointer-events: none !important;
 }
 
+/* ── 彩虹动态加载（AI 路线规划弹窗） ── */
+@keyframes rainbowSpin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes rainbowSlide {
+  to {
+    background-position: 200% 50%;
+  }
+}
+
+/* 旋转的彩虹描边光晕，铺在白色卡片底层，只露出边缘一圈 */
+.rainbow-ring {
+  background: conic-gradient(
+    from 0deg,
+    #ff5f6d,
+    #ffc371,
+    #47e6b1,
+    #4facfe,
+    #c471ed,
+    #ff5f6d
+  );
+  animation: rainbowSpin 4s linear infinite;
+}
+
+/* 彩虹流动进度条 */
+.rainbow-bar {
+  background: linear-gradient(
+    90deg,
+    #ff5f6d,
+    #ffc371,
+    #47e6b1,
+    #4facfe,
+    #c471ed,
+    #ff5f6d
+  );
+  background-size: 200% 100%;
+  animation: rainbowSlide 2.2s linear infinite;
+}
+
+/* 彩虹渐变文字（进度数字） */
+.rainbow-text {
+  background: linear-gradient(90deg, #ff5f6d, #c471ed, #4facfe, #47e6b1, #ffc371, #ff5f6d);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: rainbowSlide 3s linear infinite;
+}
+
+/* 卡片周围的旋转彩虹光晕 */
+.rainbow-glow {
+  background: conic-gradient(
+    from 0deg,
+    #ff5f6d,
+    #ffc371,
+    #47e6b1,
+    #4facfe,
+    #c471ed,
+    #ff5f6d
+  );
+  animation: rainbowSpin 7s linear infinite;
+}
+
+/* 弹窗背景漂浮的彩色光斑 */
+.rainbow-aurora {
+  position: absolute;
+  width: 20rem;
+  height: 20rem;
+  border-radius: 50%;
+  filter: blur(80px);
+  background: conic-gradient(
+    from 0deg,
+    #ff5f6d,
+    #ffc371,
+    #47e6b1,
+    #4facfe,
+    #c471ed,
+    #ff5f6d
+  );
+  animation: auroraDrift 8s ease-in-out infinite alternate;
+}
+
+.rainbow-aurora--a {
+  top: -7rem;
+  left: -6rem;
+}
+
+.rainbow-aurora--b {
+  bottom: -8rem;
+  right: -7rem;
+  animation-delay: -4s;
+  animation-duration: 10s;
+}
+
+@keyframes auroraDrift {
+  from {
+    opacity: 0.14;
+    transform: scale(0.85) translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0.28;
+    transform: scale(1.15) translate3d(2rem, 1.5rem, 0);
+  }
+}
+
+/* 进度条彩色流芯 */
+.rainbow-progress-fill {
+  background: linear-gradient(
+    90deg,
+    #ff5f6d,
+    #ff9a44,
+    #ffd166,
+    #47e6b1,
+    #4facfe,
+    #c471ed,
+    #ff5f6d
+  );
+  background-size: 250% 100%;
+  animation: rainbowSlide 2.4s linear infinite;
+  box-shadow: 0 0 16px rgba(196, 113, 237, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+/* 进度条上掠过的高光 */
+.rainbow-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.75) 45%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(255, 255, 255, 0.75) 55%,
+    transparent 100%
+  );
+  background-size: 40% 100%;
+  background-repeat: no-repeat;
+  mix-blend-mode: screen;
+  animation: sheenSweep 1.5s ease-in-out infinite;
+}
+
+@keyframes sheenSweep {
+  0% {
+    background-position: -50% 0;
+  }
+  100% {
+    background-position: 160% 0;
+  }
+}
+
+/* 进度条前端的发光球 */
+.rainbow-head {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.45), 0 0 14px 4px rgba(196, 113, 237, 0.85);
+  animation: headPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes headPulse {
+  0%,
+  100% {
+    transform: translate(50%, -50%) scale(1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: translate(50%, -50%) scale(1.35);
+    opacity: 1;
+  }
+}
+
+/* 卡片内的漂浮光点 */
+.rainbow-spark {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: sparkFloat 4.5s ease-in-out infinite;
+}
+
+.rainbow-spark--1 {
+  top: 16%;
+  left: 9%;
+  background: #ff9a44;
+  box-shadow: 0 0 12px 2px rgba(255, 154, 68, 0.7);
+}
+
+.rainbow-spark--2 {
+  top: 42%;
+  right: 7%;
+  background: #4facfe;
+  box-shadow: 0 0 12px 2px rgba(79, 172, 254, 0.7);
+  animation-delay: -1.8s;
+}
+
+.rainbow-spark--3 {
+  bottom: 14%;
+  left: 18%;
+  background: #47e6b1;
+  box-shadow: 0 0 12px 2px rgba(71, 230, 177, 0.7);
+  animation-delay: -3s;
+}
+
+@keyframes sparkFloat {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateY(-10px) scale(1.5);
+    opacity: 0.9;
+  }
+}
+

@@ -504,7 +504,7 @@ function DigitalAvatarComponent({ state, size = "md", audioElement, avatarStyle 
   const isLive2D = !!avatarStyle && avatarStyle.startsWith("live2d_");
   const isXingyun = isXingyunAvatarStyle(avatarStyle);
   const live2DPortrait = isLive2D
-    ? `/sentio/characters/free/${avatarStyle.replace("live2d_", "")}/${avatarStyle.replace("live2d_", "")}.png`
+    ? `/sentio/characters/free/${avatarStyle.replace("live2d_", "")}/thumb.webp`
     : "";
 
   const isUrl = !isLive2D && !!avatarStyle && (avatarStyle.startsWith("http") || avatarStyle.startsWith("/") || avatarStyle.includes("."));
@@ -544,6 +544,7 @@ function DigitalAvatarComponent({ state, size = "md", audioElement, avatarStyle 
               <video src={avatarStyle} autoPlay loop muted playsInline className="w-full h-full object-cover rounded-[30px]" />
             ) : (
               <motion.img src={avatarStyle} alt="Digital Avatar" className="w-full h-full object-cover rounded-[30px]"
+                fetchPriority="high" decoding="async"
                 animate={state === "speaking" ? { scale: [1, 1.02, 1] } : { scale: [1, 1.006, 1] }}
                 transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }} />
             )
@@ -575,14 +576,14 @@ function DigitalAvatarComponent({ state, size = "md", audioElement, avatarStyle 
       <div className="relative w-full h-full rounded-full overflow-hidden"
         style={{ border: `2px solid ${p.ring}`, boxShadow: `0 0 16px ${p.aura}` }}>
         {isXingyun ? (
-          <img src={XINGYUN_AVATAR_IMAGE} alt="诗仙数字人" className="w-full h-full object-cover" />
+          <img src={XINGYUN_AVATAR_IMAGE} alt="诗仙数字人" className="w-full h-full object-cover" decoding="async" />
         ) : isLive2D ? (
-          <img src={live2DPortrait} alt="Digital Avatar" className="w-full h-full object-cover" />
+          <img src={live2DPortrait} alt="Digital Avatar" className="w-full h-full object-cover" decoding="async" />
         ) : isUrl ? (
           isVideo ? (
             <video src={avatarStyle} autoPlay loop muted playsInline className="w-full h-full object-cover" />
           ) : (
-            <img src={avatarStyle} alt="Digital Avatar" className="w-full h-full object-cover" />
+            <img src={avatarStyle} alt="Digital Avatar" className="w-full h-full object-cover" decoding="async" />
           )
         ) : (
           <AvatarSVG state={state} mouthOpen={mouthOpen} mouthPathOverride={audioElement ? getDynamicMouthPath(state, mouthOpen, mouthAmplitude) : undefined} avatarStyle={avatarStyle} idSuffix={idSuffix} />

@@ -1,13 +1,13 @@
 /**
  * 魔珐星云「诗仙」数字人预设。
  *
- * 该预设会追加到原有 Live2D 形象列表末尾，原有形象与其能力保持不变；
+ * 该预设位于原有 Live2D 形象列表首位，原有形象与其能力保持不变；
  * 选中所属 avatarStyle 时，前端改用魔珐星云具身智能体 SDK 渲染与播报。
  */
 
 export const XINGYUN_AVATAR_STYLE = "xingyun_shixian";
 
-export const XINGYUN_AVATAR_IMAGE = "/xingyun/shixian.jpg";
+export const XINGYUN_AVATAR_IMAGE = "/xingyun/shixian.webp";
 
 export const XINGYUN_AVATAR_PRESET = {
   name: "诗仙 · 李白",
