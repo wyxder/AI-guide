@@ -1184,7 +1184,7 @@ export function QAScreen() {
             <motion.div animate={{ backgroundColor: (loading || isSynthesizing) ? "#D2A053" : "#34C759" }}
               className="w-2 h-2 rounded-full" />
             <span className="text-[11px] font-medium" style={{ color: (loading || isSynthesizing) ? "#D2A053" : "rgba(255,255,255,0.75)" }}>
-              {(loading || isSynthesizing) ? "正在合成语音播放" : (avatarState === "speaking" ? "正在语音伴游解说中..." : (ttsEnabled ? "旅行家Pro导览官 · 在线" : "语音播报已静音 · 在线"))}
+              {loading ? "正在思考回答…" : (isSynthesizing ? "正在合成语音播放" : (avatarState === "speaking" ? "正在语音伴游解说中..." : (ttsEnabled ? "旅行家Pro导览官 · 在线" : "语音播报已关闭 · 在线")))}
             </span>
           </div>
           <div className="flex flex-col items-end gap-2.5 relative z-30">
@@ -1231,12 +1231,20 @@ export function QAScreen() {
               <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-white/5 border border-white/10">
                 <span className="text-[11px] text-white/70">语音播报开关</span>
                 <button
-                  onClick={() => { setTtsEnabled(!ttsEnabled); if (ttsEnabled) window.speechSynthesis?.cancel(); }}
+                  onClick={() => {
+                    if (ttsEnabled) {
+                      window.speechSynthesis?.cancel();
+                      stopAudio();
+                      setIsSynthesizing(false);
+                      setAvatarState("idle");
+                    }
+                    setTtsEnabled(!ttsEnabled);
+                  }}
                   className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
                     ttsEnabled ? "bg-[#D2A053] text-black shadow-sm" : "bg-white/10 text-white/40"
                   }`}
                 >
-                  {ttsEnabled ? "已开启" : "已静音"}
+                  {ttsEnabled ? "已开启" : "已关闭"}
                 </button>
               </div>
 
@@ -1484,7 +1492,7 @@ export function QAScreen() {
           <div className="absolute top-8 left-4 right-4 flex justify-between items-center z-30 pointer-events-auto">
             <div className="text-[11px] font-medium tracking-wide bg-black/40 backdrop-blur px-3 py-1 rounded-full border border-white/10 flex items-center gap-2" style={{ color: (loading || isSynthesizing) ? "#D2A053" : "rgba(255,255,255,0.75)" }}>
               <span className={`w-2 h-2 rounded-full ${(loading || isSynthesizing) ? "bg-[#D2A053] animate-ping" : "bg-[#34C759]"}`} />
-              <span>{(loading || isSynthesizing) ? "正在合成语音播放" : (avatarState === "speaking" ? "正在语音伴游解说中..." : (ttsEnabled ? "旅行家Pro导览官 · 在线" : "语音播报已静音 · 在线"))}</span>
+              <span>{loading ? "正在思考回答…" : (isSynthesizing ? "正在合成语音播放" : (avatarState === "speaking" ? "正在语音伴游解说中..." : (ttsEnabled ? "旅行家Pro导览官 · 在线" : "语音播报已关闭 · 在线")))}</span>
             </div>
             <div className="flex gap-2 relative z-30 pointer-events-auto">
               <motion.button whileTap={{ scale: 0.85 }} onClick={(e) => { e.stopPropagation(); setShowBgMenu(!showBgMenu); setShowPersonaMenu(false); }}
@@ -1690,14 +1698,19 @@ export function QAScreen() {
                 </div>
                 <button
                   onClick={() => {
+                    if (ttsEnabled) {
+                      window.speechSynthesis?.cancel();
+                      stopAudio();
+                      setIsSynthesizing(false);
+                      setAvatarState("idle");
+                    }
                     setTtsEnabled(!ttsEnabled);
-                    if (ttsEnabled) window.speechSynthesis?.cancel();
                   }}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                     ttsEnabled ? "bg-[#D2A053] text-black shadow-md" : "bg-white/10 text-white/40"
                   }`}
                 >
-                  {ttsEnabled ? "已开启语音" : "已静音"}
+                  {ttsEnabled ? "已开启语音" : "已关闭"}
                 </button>
               </div>
 
