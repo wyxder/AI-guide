@@ -170,7 +170,8 @@ export function QAScreen() {
     const timer = window.setInterval(() => setRecordSeconds((s) => s + 1), 1000);
     return () => window.clearInterval(timer);
   }, [recording]);
-  const [ttsEnabled, setTtsEnabled] = useState(true);
+  // 语音合成默认关闭：AI 回复直接文本返回，降低响应时延；用户主动开启后才调用 TTS
+  const [ttsEnabled, setTtsEnabled] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showSatisfaction, setShowSatisfaction] = useState(false);
   const [chatExpanded, setChatExpanded] = useState(true);
@@ -257,7 +258,8 @@ export function QAScreen() {
     setTtsEnabled(true);
     setShowVoiceMenu(false);
     toast.success(`已切换音色为「${opt.name}」`);
-    speak(`您好！我是${opt.avatarName}，很高兴为您服务！`);
+    // 用户主动切换音色即视为开启播报，强制试听一次
+    speak(`您好！我是${opt.avatarName}，很高兴为您服务！`, true);
   };
 
   // Persona selection state
@@ -521,10 +523,13 @@ export function QAScreen() {
     const welcomeText = spotName
       ? `您好！我已为您准备好「${spotName}」的详细讲解，想了解历史渊源、文化典故还是游览小贴士？`
       : "您好！我是旅行家小玉，右上角可以切换背景，数字人形象，声音风格，随时为您解答景区一切问题！";
-    const timer = setTimeout(() => {
-      speak(welcomeText);
-    }, 450);
-    return () => clearTimeout(timer);
+    // 默认静音：用户首次点击界面时，仅播放一次开场白；后续回复不再自动合成语音
+    const playOpeningOnce = () => {
+      window.removeEventListener("pointerdown", playOpeningOnce);
+      speak(welcomeText, true);
+    };
+    window.addEventListener("pointerdown", playOpeningOnce);
+    return () => window.removeEventListener("pointerdown", playOpeningOnce);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spotName]);
 
@@ -662,8 +667,9 @@ export function QAScreen() {
     await audio.play();
   };
 
-  const speak = async (text: string) => {
-    if (!ttsEnabled) return;
+  const speak = async (text: string, force = false) => {
+    // 默认静音：AI 回复仅文本返回，不调用语音合成，保证低时延
+    if (!ttsEnabled && !force) return;
     stopAudio();
 
     const cleanedText = text.replace(/\[情感[:：][^\]]+\]/g, "").trim();
@@ -1178,7 +1184,7 @@ export function QAScreen() {
             <motion.div animate={{ backgroundColor: (loading || isSynthesizing) ? "#D2A053" : "#34C759" }}
               className="w-2 h-2 rounded-full" />
             <span className="text-[11px] font-medium" style={{ color: (loading || isSynthesizing) ? "#D2A053" : "rgba(255,255,255,0.75)" }}>
-              {(loading || isSynthesizing) ? "正在合成语音播放" : (avatarState === "speaking" ? "正在语音伴游解说中..." : "旅行家Pro导览官 · 在线")}
+              {(loading || isSynthesizing) ? "正在合成语音播放" : (avatarState === "speaking" ? "正在语音伴游解说中..." : (ttsEnabled ? "旅行家Pro导览官 · 在线" : "语音播报已静音 · 在线"))}
             </span>
           </div>
           <div className="flex flex-col items-end gap-2.5 relative z-30">
@@ -1478,7 +1484,7 @@ export function QAScreen() {
           <div className="absolute top-8 left-4 right-4 flex justify-between items-center z-30 pointer-events-auto">
             <div className="text-[11px] font-medium tracking-wide bg-black/40 backdrop-blur px-3 py-1 rounded-full border border-white/10 flex items-center gap-2" style={{ color: (loading || isSynthesizing) ? "#D2A053" : "rgba(255,255,255,0.75)" }}>
               <span className={`w-2 h-2 rounded-full ${(loading || isSynthesizing) ? "bg-[#D2A053] animate-ping" : "bg-[#34C759]"}`} />
-              <span>{(loading || isSynthesizing) ? "正在合成语音播放" : (avatarState === "speaking" ? "正在语音伴游解说中..." : "旅行家Pro导览官 · 在线")}</span>
+              <span>{(loading || isSynthesizing) ? "正在合成语音播放" : (avatarState === "speaking" ? "正在语音伴游解说中..." : (ttsEnabled ? "旅行家Pro导览官 · 在线" : "语音播报已静音 · 在线"))}</span>
             </div>
             <div className="flex gap-2 relative z-30 pointer-events-auto">
               <motion.button whileTap={{ scale: 0.85 }} onClick={(e) => { e.stopPropagation(); setShowBgMenu(!showBgMenu); setShowPersonaMenu(false); }}

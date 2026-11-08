@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, MessageCircle, MapPin, Navigation, User, Music,
   BarChart2, BookOpen, Bot, TrendingUp, Settings, ChevronRight,
-  Bell, Gift, LogOut
+  Bell, Gift, LogOut, Clock3, ArrowLeftRight
 } from "lucide-react";
 import { GlobalSearch } from "@/components/ui/GlobalSearch";
 import { useEazo } from "@eazo/sdk/react";
@@ -192,15 +192,15 @@ export function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
       style={{
         width: 240,
         background: isAdmin
-          ? "linear-gradient(180deg, #1A2520 0%, #121815 100%)"
+          ? "linear-gradient(180deg, #04141D 0%, #061A26 60%, #041019 100%)"
           : "rgba(250,248,245,0.98)",
-        borderRight: `1px solid ${isAdmin ? "rgba(255,255,255,0.07)" : "#E6E2D8"}`,
+        borderRight: `1px solid ${isAdmin ? "rgba(64,224,255,0.24)" : "#E6E2D8"}`,
         backdropFilter: "blur(20px)",
       }}>
 
       {/* Logo area */}
       <Link href="/welcome" className="block group">
-        <div className="px-5 pt-6 pb-4" style={{ borderBottom: isAdmin ? "1px solid rgba(255,255,255,0.07)" : "1px solid #E6E2D8" }}>
+        <div className="px-5 pt-6 pb-4" style={{ borderBottom: isAdmin ? "1px solid rgba(64,224,255,0.18)" : "1px solid #E6E2D8" }}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 relative shadow-[0_4px_12px_rgba(79,111,82,0.15)] border border-[#E6E2D8]/50">
               <Image
@@ -212,12 +212,12 @@ export function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
               />
             </div>
             <div className="min-w-0">
-              <p className={`text-[18px] font-bold truncate transition-colors ${isAdmin ? "text-white/90 group-hover:text-[#D2A053]" : "text-[#1E2522] group-hover:text-[#4F6F52]"}`}
+              <p className={`text-[18px] font-bold truncate transition-colors ${isAdmin ? "text-white/90 group-hover:text-[#5CECFF]" : "text-[#1E2522] group-hover:text-[#4F6F52]"}`}
                 style={{ fontFamily: "var(--font-noto-serif)" }}>
                 旅行家Pro
               </p>
               <p className="text-[13px] truncate transition-colors group-hover:opacity-80"
-                style={{ color: isAdmin ? "rgba(255,255,255,0.35)" : "#8F9F8F" }}>
+                style={{ color: isAdmin ? "rgba(168,208,226,0.55)" : "#8F9F8F" }}>
                 {isAdmin ? "运营管理中心" : "AI数字人导览"}
               </p>
             </div>
@@ -240,11 +240,11 @@ export function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
                   className="flex items-center gap-3.5 px-3.5 py-3 rounded-xl cursor-pointer transition-colors"
                   style={{
                     background: active
-                      ? isAdmin ? "rgba(210,160,83,0.15)" : "rgba(79,111,82,0.1)"
+                      ? isAdmin ? "rgba(92,236,255,0.12)" : "rgba(79,111,82,0.1)"
                       : "transparent",
                     color: active
-                      ? isAdmin ? "#D2A053" : "#4F6F52"
-                      : isAdmin ? "rgba(255,255,255,0.45)" : "#8F9F8F",
+                      ? isAdmin ? "#5CECFF" : "#4F6F52"
+                      : isAdmin ? "rgba(168,208,226,0.55)" : "#8F9F8F",
                   }}>
                   <item.icon className="w-5 h-5 flex-shrink-0" strokeWidth={active ? 2.2 : 1.6} />
                   <div className="flex-1 min-w-0">
@@ -256,7 +256,7 @@ export function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
                     )}
                   </div>
                   {active && <div className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ background: isAdmin ? "#D2A053" : "#4F6F52" }} />}
+                    style={{ background: isAdmin ? "#5CECFF" : "#4F6F52", boxShadow: isAdmin ? "0 0 8px rgba(92,236,255,0.8)" : undefined }} />}
                 </motion.div>
               </Link>
             );
@@ -397,9 +397,9 @@ export function AdminBottomTabBar() {
     <nav
       className="fixed bottom-0 left-0 right-0 md:hidden z-30"
       style={{
-        background: "rgba(18, 24, 21, 0.97)",
+        background: "rgba(4, 20, 29, 0.97)",
         backdropFilter: "blur(16px)",
-        borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+        borderTop: "1px solid rgba(64, 224, 255, 0.24)",
         paddingBottom: "env(safe-area-inset-bottom)",
       }}>
       <div className="flex justify-around items-end h-15 px-2">
@@ -415,14 +415,14 @@ export function AdminBottomTabBar() {
               <motion.div animate={{ scale: active ? 1.12 : 1 }}
                 transition={{ type: "spring", stiffness: 400, damping: 20 }}>
                 <Icon className="w-4.5 h-4.5"
-                  style={{ color: active ? "#D2A053" : "rgba(255, 255, 255, 0.4)", strokeWidth: active ? 2.2 : 1.6 }} />
+                  style={{ color: active ? "#5CECFF" : "rgba(168, 208, 226, 0.45)", strokeWidth: active ? 2.2 : 1.6 }} />
               </motion.div>
               <span className="text-[9px] font-bold leading-none"
-                style={{ color: active ? "#D2A053" : "rgba(255, 255, 255, 0.4)" }}>{tab.label}</span>
+                style={{ color: active ? "#5CECFF" : "rgba(168, 208, 226, 0.45)" }}>{tab.label}</span>
               {active && (
                 <motion.div layoutId="admin-tab-indicator"
                   className="absolute bottom-0 w-8 h-0.5 rounded-full"
-                  style={{ background: "#D2A053" }} />
+                  style={{ background: "#5CECFF", boxShadow: "0 0 8px rgba(92,236,255,0.8)" }} />
               )}
             </div>
           );
@@ -439,6 +439,114 @@ export function AdminBottomTabBar() {
         })}
       </div>
     </nav>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   数据大屏顶部菜单栏（替代左侧边栏，科技 HUD 风格）
+════════════════════════════════════════════════════════════ */
+export function AdminTopNav() {
+  const pathname = usePathname();
+  const [now, setNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | undefined;
+    const start = setTimeout(() => {
+      setNow(new Date());
+      timer = setInterval(() => setNow(new Date()), 1000);
+    }, 0);
+    return () => {
+      clearTimeout(start);
+      if (timer) clearInterval(timer);
+    };
+  }, []);
+
+  const handleExitAdmin = async () => {
+    try {
+      localStorage.removeItem("eazo.session");
+      await auth.logout();
+      toast.success("已退出管理员后台");
+      window.location.href = "/home";
+    } catch {
+      toast.error("退出失败，请重试");
+    }
+  };
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const clock = now
+    ? `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
+    : "--:--:--";
+  const dateText = now
+    ? `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())}`
+    : "";
+
+  return (
+    <header className="tech-topbar sticky top-0 z-30 shrink-0">
+      <div className="tech-topbar-sheen" />
+      <div className="relative z-10 flex items-center gap-4 px-4 md:px-6 py-2.5">
+        {/* 品牌 */}
+        <Link href="/welcome" className="flex items-center gap-2.5 shrink-0 group">
+          <div className="w-9 h-9 rounded-md overflow-hidden border border-[#5cecff]/40 shadow-[0_0_14px_rgba(92,236,255,0.35)]">
+            <Image src="/image/logo.webp" alt="Logo" width={36} height={36} className="w-full h-full object-cover" />
+          </div>
+          <div className="leading-none">
+            <p className="text-[15px] font-black tracking-[0.18em] text-[#eafaff] group-hover:text-[#8ff4ff] transition-colors">
+              智慧文旅
+            </p>
+            <p className="mt-1 text-[9px] tracking-[0.22em] text-[#5b9db3]">运营指挥中心</p>
+          </div>
+        </Link>
+
+        {/* 中央装饰标题 */}
+        <div className="hidden xl:flex items-center gap-3 flex-1 justify-center min-w-0">
+          <span className="h-px w-16 bg-gradient-to-r from-transparent to-[#5cecff]/70" />
+          <span className="text-[10px] text-[#5cecff]/80 tracking-[0.3em]">///</span>
+          <span className="text-[17px] font-black tracking-[0.28em] text-[#eafaff]"
+            style={{ textShadow: "0 0 18px rgba(92,236,255,0.55)" }}>
+            智慧文旅数字人运营后台
+          </span>
+          <span className="text-[10px] text-[#5cecff]/80 tracking-[0.3em]">///</span>
+          <span className="h-px w-16 bg-gradient-to-l from-transparent to-[#5cecff]/70" />
+        </div>
+
+        {/* 菜单按钮 */}
+        <nav className="flex items-center gap-2 overflow-x-auto tech-scroll flex-1 xl:flex-none justify-start xl:justify-end">
+          {ADMIN_ITEMS.map((item) => {
+            const active = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
+            return (
+              <Link key={item.href} href={item.href}>
+                <motion.span whileTap={{ scale: 0.96 }}
+                  data-active={active}
+                  className="tech-nav-btn">
+                  <item.icon className="w-4 h-4" strokeWidth={active ? 2.2 : 1.7} />
+                  {item.label}
+                </motion.span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* 时钟 / 返回 */}
+        <div className="hidden md:flex items-center gap-3 shrink-0">
+          <div className="flex flex-col items-end leading-none">
+            <span className="tech-num text-[15px] font-black tracking-widest text-[#8ff4ff]"
+              style={{ textShadow: "0 0 12px rgba(92,236,255,0.6)" }}>{clock}</span>
+            <span className="mt-1 text-[9px] tracking-[0.18em] text-[#5b9db3]">{dateText}</span>
+          </div>
+          <motion.button whileTap={{ scale: 0.95 }} onClick={handleExitAdmin}
+            className="tech-nav-btn" title="返回游客前台">
+            <ArrowLeftRight className="w-4 h-4" />
+            返回前台
+          </motion.button>
+        </div>
+
+        {/* 移动端时钟 */}
+        <div className="md:hidden flex items-center gap-1.5 shrink-0">
+          <Clock3 className="w-3.5 h-3.5 text-[#5cecff]" />
+          <span className="tech-num text-[12px] font-bold text-[#8ff4ff]">{clock}</span>
+        </div>
+      </div>
+    </header>
   );
 }
 

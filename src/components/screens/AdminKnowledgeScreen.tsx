@@ -177,23 +177,23 @@ export function AdminKnowledgeScreen() {
   };
 
   return (
-    <div className="min-h-svh" style={{ background: "#FAF8F5" }}>
+    <div className="tech-screen min-h-svh">
       {/* Header */}
-      <div className="px-6 pt-6 pb-4 flex items-center justify-between" style={{ borderBottom: "1px solid #E6E2D8" }}>
+      <div className="px-6 pt-6 pb-4 flex items-center justify-between" style={{ borderBottom: "1px solid #1A4F62" }}>
         <div>
-          <h1 className="text-xl font-bold" style={{ fontFamily: "var(--font-noto-serif)", color: "#1E2522" }}>知识库管理</h1>
-          <p className="text-xs mt-1" style={{ color: "#8F9F8F" }}>共 {docs.length} 条记录</p>
+          <h1 className="text-xl font-bold" style={{ fontFamily: "var(--font-noto-serif)", color: "#DDF4FF" }}>知识库管理</h1>
+          <p className="text-xs mt-1" style={{ color: "#6E93A8" }}>共 {docs.length} 条记录</p>
         </div>
         <div className="flex items-center gap-2">
           <input ref={fileRef} type="file" accept=".txt,.pdf,.doc,.docx" className="hidden" onChange={handleFileUpload} />
           <motion.button whileTap={{ scale: 0.95 }} onClick={() => fileRef.current?.click()}
             className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium"
-            style={{ background: "white", border: "1px solid #E6E2D8", color: "#3A4D39" }}>
+            style={{ background: "rgba(8,30,42,0.86)", border: "1px solid #1A4F62", color: "#A8CFE0" }}>
             <Upload className="w-4 h-4" /> 上传文件
           </motion.button>
           <motion.button whileTap={{ scale: 0.95 }} onClick={() => setEditDoc({ category: "general", content: "", tags: [] })}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-white"
-            style={{ background: "linear-gradient(135deg,#4F6F52,#3A5240)" }}>
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium"
+            style={{ background: "linear-gradient(135deg,#9DF7FF,#17B6D6)", color: "#032029", boxShadow: "0 0 16px rgba(92,236,255,0.3)" }}>
             <Plus className="w-4 h-4" /> 新增
           </motion.button>
         </div>
@@ -203,16 +203,16 @@ export function AdminKnowledgeScreen() {
         {/* Filters */}
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex-1 min-w-48 flex items-center gap-2 px-3 py-2 rounded-lg"
-            style={{ background: "white", border: "1px solid #E6E2D8" }}>
-            <Search className="w-4 h-4 flex-shrink-0" style={{ color: "#8F9F8F" }} />
+            style={{ background: "rgba(8,30,42,0.86)", border: "1px solid #1A4F62" }}>
+            <Search className="w-4 h-4 flex-shrink-0" style={{ color: "#6E93A8" }} />
             <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="搜索标题或内容..." className="flex-1 bg-transparent text-sm outline-none" style={{ color: "#1E2522" }} />
+              placeholder="搜索标题或内容..." className="flex-1 bg-transparent text-sm outline-none" style={{ color: "#DDF4FF" }} />
           </div>
           <div className="flex gap-2 flex-wrap">
             {CATEGORIES.map((cat) => (
               <motion.button key={cat} whileTap={{ scale: 0.93 }} onClick={() => setCatFilter(cat)}
                 className="px-3 py-1.5 rounded-full text-xs font-medium"
-                style={{ background: catFilter === cat ? "#4F6F52" : "white", color: catFilter === cat ? "white" : "#3A4D39", border: catFilter === cat ? "1px solid #4F6F52" : "1px solid #E6E2D8" }}>
+                style={{ background: catFilter === cat ? "#22D3EE" : "rgba(8,30,42,0.86)", color: catFilter === cat ? "#032029" : "#A8CFE0", border: catFilter === cat ? "1px solid #22D3EE" : "1px solid #1A4F62" }}>
                 {cat === "全部" ? "全部" : (CATEGORY_LABELS[cat] ?? cat)}
               </motion.button>
             ))}
@@ -223,7 +223,7 @@ export function AdminKnowledgeScreen() {
         {loading ? (
           <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="skeleton h-20 rounded-xl" />)}</div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16" style={{ color: "#8F9F8F" }}>
+          <div className="text-center py-16" style={{ color: "#6E93A8" }}>
             <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p>暂无记录</p>
           </div>
@@ -234,23 +234,23 @@ export function AdminKnowledgeScreen() {
               return (
                 <motion.div key={doc.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING, delay: i * 0.02 }}
                   className="card-ink overflow-hidden flex flex-col justify-between"
-                  style={{ background: "white", border: "1px solid #E6E2D8", borderRadius: "16px", boxShadow: "0 4px 20px rgba(0,0,0,0.02)" }}>
+                  style={{ background: "rgba(8,30,42,0.86)", border: "1px solid #1A4F62", borderRadius: "16px", boxShadow: "0 4px 20px rgba(0,0,0,0.02)" }}>
                   
                   {/* Card Cover Image */}
-                  <div className="relative w-full h-36 bg-gray-100 overflow-hidden flex items-center justify-center border-b" style={{ borderColor: "#F2EFE9" }}>
+                  <div className="relative w-full h-36 bg-[#0B2534] overflow-hidden flex items-center justify-center border-b" style={{ borderColor: "#0E2E3E" }}>
                     {coverImg ? (
                       <img src={coverImg} alt={doc.title} className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" />
                     ) : (
                       <div className="flex flex-col items-center gap-2 opacity-40">
-                        <FileText className="w-8 h-8 text-[#3A4D39]" />
-                        <span className="text-[10px] text-gray-500">无封面图</span>
+                        <FileText className="w-8 h-8 text-[#A8CFE0]" />
+                        <span className="text-[10px] text-[#7FA9BE]">无封面图</span>
                       </div>
                     )}
                     
                     {/* Category Tag on Cover */}
                     <div className="absolute top-2 left-2 flex items-center gap-1.5">
                       <span className="text-[9px] px-2 py-0.5 rounded-full font-medium shadow-sm text-white"
-                        style={{ background: "#4F6F52" }}>
+                        style={{ background: "#22D3EE" }}>
                         {CATEGORY_LABELS[doc.category] ?? doc.category}
                       </span>
                       {doc.vectorized && (
@@ -264,22 +264,22 @@ export function AdminKnowledgeScreen() {
                   {/* Card Content */}
                   <div className="p-4 flex-1 flex flex-col justify-between">
                     <div>
-                      <h4 className="font-bold text-[14px] line-clamp-1 mb-1.5" style={{ color: "#1E2522" }}>{doc.title}</h4>
-                      <p className="text-[11px] line-clamp-3 leading-relaxed mb-4" style={{ color: "#8F9F8F" }}>{doc.content}</p>
+                      <h4 className="font-bold text-[14px] line-clamp-1 mb-1.5" style={{ color: "#DDF4FF" }}>{doc.title}</h4>
+                      <p className="text-[11px] line-clamp-3 leading-relaxed mb-4" style={{ color: "#6E93A8" }}>{doc.content}</p>
                     </div>
                     
                     {/* Action Buttons */}
-                    <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: "#F2EFE9" }}>
-                      <span className="text-[9px] text-gray-400">
+                    <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: "#0E2E3E" }}>
+                      <span className="text-[9px] text-[#6E93A8]">
                         {doc.updatedAt ? new Date(doc.updatedAt).toLocaleDateString() : ""}
                       </span>
                       <div className="flex items-center gap-1.5">
                         <motion.button whileTap={{ scale: 0.88 }} onClick={() => setEditDoc(doc)}
-                          className="p-1.5 rounded-lg flex items-center justify-center" style={{ background: "#F5F0E8", color: "#4F6F52" }}>
+                          className="p-1.5 rounded-lg flex items-center justify-center" style={{ background: "#0B2534", color: "#22D3EE" }}>
                           <Pencil className="w-3.5 h-3.5" />
                         </motion.button>
                         <motion.button whileTap={{ scale: 0.88 }} onClick={() => deleteDoc(doc.id)}
-                          className="p-1.5 rounded-lg flex items-center justify-center" style={{ background: "rgba(220,38,38,0.08)", color: "#DC2626" }}>
+                          className="p-1.5 rounded-lg flex items-center justify-center" style={{ background: "rgba(255,107,129,0.08)", color: "#FF6B81" }}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </motion.button>
                       </div>
@@ -300,28 +300,28 @@ export function AdminKnowledgeScreen() {
             style={{ background: "rgba(0,0,0,0.4)" }}>
             <motion.div initial={{ y: 60 }} animate={{ y: 0 }} exit={{ y: 60 }} transition={SPRING}
               className="w-full max-w-lg rounded-t-2xl md:rounded-2xl p-6 space-y-4"
-              style={{ background: "white", maxHeight: "90vh", overflowY: "auto" }}>
+              style={{ background: "rgba(8,30,42,0.86)", maxHeight: "90vh", overflowY: "auto" }}>
               <div className="flex justify-between items-center">
-                <h3 className="font-bold" style={{ fontFamily: "var(--font-noto-serif)", color: "#1E2522" }}>
+                <h3 className="font-bold" style={{ fontFamily: "var(--font-noto-serif)", color: "#DDF4FF" }}>
                   {editDoc.id ? "编辑知识条目" : "新增知识条目"}
                 </h3>
-                <button onClick={() => setEditDoc(null)}><X className="w-5 h-5" style={{ color: "#8F9F8F" }} /></button>
+                <button onClick={() => setEditDoc(null)}><X className="w-5 h-5" style={{ color: "#6E93A8" }} /></button>
               </div>
               <input type="text" value={editDoc.title ?? ""} onChange={(e) => setEditDoc({ ...editDoc, title: e.target.value })}
                 placeholder="条目标题" className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
-                style={{ background: "#F5F0E8", border: "1px solid #E6E2D8", color: "#1E2522" }} />
+                style={{ background: "#0B2534", border: "1px solid #1A4F62", color: "#DDF4FF" }} />
               <select value={editDoc.category ?? "general"} onChange={(e) => setEditDoc({ ...editDoc, category: e.target.value })}
                 className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
-                style={{ background: "#F5F0E8", border: "1px solid #E6E2D8", color: "#1E2522" }}>
+                style={{ background: "#0B2534", border: "1px solid #1A4F62", color: "#DDF4FF" }}>
                 {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
 
               {/* Cover Image Upload Area */}
               <div>
-                <label className="block text-xs font-semibold mb-1.5 text-gray-500">封面图片</label>
+                <label className="block text-xs font-semibold mb-1.5 text-[#7FA9BE]">封面图片</label>
                 <input ref={coverFileRef} type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
                 <div className="flex gap-3 items-center">
-                  <div className="w-16 h-16 rounded-lg overflow-hidden border border-dashed border-gray-300 flex items-center justify-center bg-gray-50 relative group flex-shrink-0">
+                  <div className="w-16 h-16 rounded-lg overflow-hidden border border-dashed border-[#1A4F62] flex items-center justify-center bg-[#0B2534] relative group flex-shrink-0">
                     {editDoc.coverUrl ? (
                       <>
                         <img src={editDoc.coverUrl} alt="Cover Preview" className="w-full h-full object-cover" />
@@ -331,24 +331,24 @@ export function AdminKnowledgeScreen() {
                         </button>
                       </>
                     ) : (
-                      <Upload className="w-4 h-4 text-gray-400" />
+                      <Upload className="w-4 h-4 text-[#6E93A8]" />
                     )}
                   </div>
                   <button type="button" onClick={() => coverFileRef.current?.click()}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#F5F0E8] text-[#3A4D39] border border-[#E6E2D8] hover:bg-[#eae4d9] transition-colors">
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#0B2534] text-[#A8CFE0] border border-[#1A4F62] hover:bg-[#123B4E] transition-colors">
                     选择图片
                   </button>
                 </div>
               </div>
               <textarea value={editDoc.content ?? ""} onChange={(e) => setEditDoc({ ...editDoc, content: e.target.value })}
                 rows={6} placeholder="知识内容..." className="w-full px-3 py-2.5 rounded-lg text-sm outline-none resize-none"
-                style={{ background: "#F5F0E8", border: "1px solid #E6E2D8", color: "#1E2522" }} />
+                style={{ background: "#0B2534", border: "1px solid #1A4F62", color: "#DDF4FF" }} />
               <div className="flex gap-3">
                 <button onClick={() => setEditDoc(null)} className="flex-1 py-2.5 rounded-lg text-sm"
-                  style={{ background: "#F0EDE5", color: "#3A4D39" }}>取消</button>
+                  style={{ background: "#0E2E3E", color: "#A8CFE0" }}>取消</button>
                 <motion.button whileTap={{ scale: 0.97 }} onClick={saveDoc} disabled={saving}
-                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2"
-                  style={{ background: "linear-gradient(135deg,#4F6F52,#3A5240)" }}>
+                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2"
+                  style={{ background: "linear-gradient(135deg,#9DF7FF,#17B6D6)", color: "#032029" }}>
                   {saving ? "保存中..." : <><Check className="w-4 h-4" />保存</>}
                 </motion.button>
               </div>

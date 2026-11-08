@@ -1,6 +1,6 @@
 "use client";
 import { usePathname } from "next/navigation";
-import { BottomTabBar, SidebarNav, AdminBottomTabBar } from "./Navigation";
+import { BottomTabBar, SidebarNav, AdminTopNav } from "./Navigation";
 import { TopBar } from "./TopBar";
 import { PointsInviteModal } from "@/components/ui/PointsInviteModal";
 import { auth } from "@eazo/sdk";
@@ -48,7 +48,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   if (isAdmin) {
     if (loading) {
       return (
-        <div className="min-h-svh flex items-center justify-center animate-pulse" style={{ background: "#FAF8F5" }}>
+        <div className="tech-screen min-h-svh flex items-center justify-center animate-pulse">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-black text-white"
             style={{ background: "linear-gradient(135deg,#D2A053,#B8843A)", fontFamily: "var(--font-noto-serif)" }}>
             玉
@@ -58,17 +58,18 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     }
     if (!user) {
       return (
-        <div className="min-h-svh w-full flex items-center justify-center px-4" style={{ background: "#FAF8F5" }}>
-          <div className="w-full max-w-md p-8 rounded-2xl border border-[#E6E2D8] bg-white shadow-xl text-center space-y-6">
+        <div className="tech-screen min-h-svh w-full flex items-center justify-center px-4">
+          <div className="w-full max-w-md p-8 rounded-2xl border border-[#1A4F62] bg-[#081E2A]/90 shadow-xl text-center space-y-6">
+            <span className="tech-chip mx-auto">景区运营管理中心</span>
             <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center text-2xl font-black text-white"
               style={{ background: "linear-gradient(135deg,#D2A053,#B8843A)", fontFamily: "var(--font-noto-serif)", boxShadow: "0 6px 16px rgba(210,160,83,0.25)" }}>
               玉
             </div>
             <div className="space-y-2">
-              <h2 className="text-xl font-bold" style={{ fontFamily: "var(--font-noto-serif)", color: "#1E2522" }}>
+              <h2 className="text-xl font-bold" style={{ fontFamily: "var(--font-noto-serif)", color: "#DDF4FF" }}>
                 运营管理中心
               </h2>
-              <p className="text-xs text-[#8F9F8F]">
+              <p className="text-xs text-[#7FA9BE]">
                 请先登录以访问景区管理、数据大屏及配置项
               </p>
             </div>
@@ -87,35 +88,40 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-svh w-full max-w-full overflow-x-hidden">
-      {/* PC sidebar — hidden on mobile. */}
-      <SidebarNav isAdmin={isAdmin} />
+      {/* PC sidebar — 管理后台统一使用顶部菜单栏 */}
+      {!isAdmin && <SidebarNav isAdmin={false} />}
 
       <main
-        className="flex-1 min-h-svh w-full min-w-0"
+        className={`flex-1 min-h-svh w-full min-w-0 ${isAdmin ? "admin-tech-scope" : ""}`}
         style={{
           marginLeft: 0,
         }}
       >
-        <style>{`
-          main { padding-bottom: calc(env(safe-area-inset-bottom) + 56px); }
-          @media (min-width: 768px) {
-            main { padding-bottom: 0 !important; }
-          }
-        `}</style>
-        {/* Offset from sidebar on PC */}
-        <style>{`
-          @media (min-width: 768px) {
-            main { 
-              margin-left: 240px !important; 
+        {!isAdmin && (
+          <style>{`
+            main { padding-bottom: calc(env(safe-area-inset-bottom) + 56px); }
+            @media (min-width: 768px) {
+              main { padding-bottom: 0 !important; }
             }
-          }
-        `}</style>
+          `}</style>
+        )}
+        {/* Offset from sidebar on PC（管理后台全宽，不需要偏移） */}
+        {!isAdmin && (
+          <style>{`
+            @media (min-width: 768px) {
+              main { 
+                margin-left: 240px !important; 
+              }
+            }
+          `}</style>
+        )}
         {!isAdmin && <TopBar />}
+        {isAdmin && <AdminTopNav />}
         {children}
       </main>
 
-      {/* Mobile bottom tab */}
-      {isAdmin ? <AdminBottomTabBar /> : <BottomTabBar />}
+      {/* Mobile bottom tab（管理后台使用顶部菜单栏，不再重复展示） */}
+      {!isAdmin && <BottomTabBar />}
 
       <div style={{ position: "static" }}>
         <PointsInviteModal 

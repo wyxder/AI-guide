@@ -195,8 +195,8 @@ export function AdminAvatarScreen() {
 
   if (loading && configs.length === 0) {
     return (
-      <div className="min-h-svh flex items-center justify-center bg-[#FAF8F5]">
-        <Loader2 className="w-6 h-6 animate-spin text-[#4F6F52]" />
+      <div className="tech-screen min-h-svh flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-[#22D3EE]" />
       </div>
     );
   }
@@ -204,7 +204,7 @@ export function AdminAvatarScreen() {
   const isVideo = selected?.avatarStyle?.endsWith(".mp4") || selected?.avatarStyle?.endsWith(".webm") || selected?.avatarStyle?.includes("video");
 
   return (
-    <div className="min-h-svh bg-[#FAF8F5] pb-10">
+    <div className="tech-screen min-h-svh pb-10">
       <style>{`
         @media (min-width: 1024px) {
           .admin-preset-column {
@@ -224,18 +224,18 @@ export function AdminAvatarScreen() {
       `}</style>
 
       {/* Header */}
-      <div className="px-6 pt-6 pb-4 flex items-center justify-between border-b border-[#E6E2D8] bg-white shadow-sm">
+      <div className="px-6 pt-6 pb-4 flex items-center justify-between border-b border-[#1A4F62] bg-[#0A2130] shadow-sm">
         <div>
-          <h1 className="text-xl font-bold flex items-center gap-2" style={{ fontFamily: "var(--font-noto-serif)", color: "#1E2522" }}>
-            <Sparkles className="w-5 h-5 text-[#D2A053]" /> 数字人配置管理
+          <h1 className="text-xl font-bold flex items-center gap-2" style={{ fontFamily: "var(--font-noto-serif)", color: "#DDF4FF" }}>
+            <Sparkles className="w-5 h-5 text-[#FFC857]" /> 数字人配置管理
           </h1>
-          <p className="text-xs mt-1 text-[#8F9F8F]">创建、修改和删除您的AI数字人导览形象</p>
+          <p className="text-xs mt-1 text-[#6E93A8]">创建、修改和删除您的AI数字人导览形象</p>
         </div>
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={addNewPreset}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white shadow-md transition-all hover:opacity-90"
-          style={{ background: "linear-gradient(135deg,#4F6F52,#3A5240)" }}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold shadow-md transition-all hover:opacity-90"
+          style={{ background: "linear-gradient(135deg,#9DF7FF,#17B6D6)", color: "#032029", boxShadow: "0 0 16px rgba(92,236,255,0.3)" }}
         >
           <Plus className="w-4 h-4" /> 新建数字人
         </motion.button>
@@ -244,8 +244,8 @@ export function AdminAvatarScreen() {
       <div className="max-w-7xl mx-auto p-6 flex flex-col lg:flex-row gap-6 items-start">
         {/* Left column: Avatar Preset List */}
         <div className="w-full admin-preset-column space-y-4">
-          <div className="bg-white p-4 rounded-2xl border border-[#E6E2D8] shadow-sm">
-            <h3 className="text-sm font-semibold text-[#1E2522] mb-3" style={{ fontFamily: "var(--font-noto-serif)" }}>
+          <div className="bg-[#0A2130] p-4 rounded-2xl border border-[#1A4F62] shadow-sm">
+            <h3 className="text-sm font-semibold text-[#DDF4FF] mb-3" style={{ fontFamily: "var(--font-noto-serif)" }}>
               数字人形象列表 ({configs.length})
             </h3>
             <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
@@ -260,12 +260,12 @@ export function AdminAvatarScreen() {
                       setSettingsTab("general");
                     }}
                     className={`p-3 rounded-xl cursor-pointer border flex items-center gap-3 transition-all relative ${
-                      isActive ? "border-[#4F6F52] bg-[#4F6F52]/5" : "border-[#E6E2D8] bg-white hover:bg-[#FAF8F5]"
+                      isActive ? "border-[#22D3EE] bg-[#22D3EE]/5" : "border-[#1A4F62] bg-[#0A2130] hover:bg-[#06121B]"
                     }`}
                   >
                     <div className="w-12 h-12 rounded-lg overflow-hidden bg-black/5 flex-shrink-0 relative">
                       {cIsVideo ? (
-                        <div className="w-full h-full bg-[#1A2520] flex items-center justify-center">
+                        <div className="w-full h-full bg-[#04141D] flex items-center justify-center">
                           <Play className="w-4 h-4 text-white opacity-60" />
                         </div>
                       ) : (
@@ -276,14 +276,14 @@ export function AdminAvatarScreen() {
                         />
                       )}
                       {c.isDefault && (
-                        <div className="absolute top-0 right-0 bg-[#D2A053] p-0.5 rounded-bl text-[8px] text-white">
+                        <div className="absolute top-0 right-0 bg-[#FFC857] p-0.5 rounded-bl text-[8px] text-white">
                           <UserCheck className="w-2.5 h-2.5" />
                         </div>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-[#1E2522] truncate">{c.name}</p>
-                      <p className="text-[10px] text-[#8F9F8F] mt-0.5 truncate">{VOICES.find((v) => v.id === c.voiceStyle)?.label || "预设"}音色</p>
+                      <p className="text-xs font-bold text-[#DDF4FF] truncate">{c.name}</p>
+                      <p className="text-[10px] text-[#6E93A8] mt-0.5 truncate">{VOICES.find((v) => v.id === c.voiceStyle)?.label || "预设"}音色</p>
                     </div>
                     {configs.length > 1 && (
                       <button
@@ -291,7 +291,7 @@ export function AdminAvatarScreen() {
                           e.stopPropagation();
                           deleteConfig(c.id);
                         }}
-                        className="p-1 rounded-lg hover:bg-red-50 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity md:opacity-100"
+                        className="p-1 rounded-lg hover:bg-[#3A1220] text-[#FF6B81] opacity-0 group-hover:opacity-100 transition-opacity md:opacity-100"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -307,16 +307,16 @@ export function AdminAvatarScreen() {
         {selected ? (
           <>
             {/* Editor controls */}
-            <div className="w-full admin-editor-column bg-white p-5 rounded-2xl border border-[#E6E2D8] shadow-sm space-y-5">
-              <div className="flex items-center justify-between border-b border-[#F0EDE5] pb-2">
-                <h3 className="text-sm font-semibold text-[#1E2522]" style={{ fontFamily: "var(--font-noto-serif)" }}>
+            <div className="w-full admin-editor-column bg-[#0A2130] p-5 rounded-2xl border border-[#1A4F62] shadow-sm space-y-5">
+              <div className="flex items-center justify-between border-b border-[#0E2E3E] pb-2">
+                <h3 className="text-sm font-semibold text-[#DDF4FF]" style={{ fontFamily: "var(--font-noto-serif)" }}>
                   属性设置
                 </h3>
               </div>
 
               {/* Tabs for Live2D configurations */}
               {selected.avatarStyle.startsWith("live2d_") && (
-                <div className="flex border-b border-[#F0EDE5] overflow-x-auto no-scrollbar gap-1 pb-1">
+                <div className="flex border-b border-[#0E2E3E] overflow-x-auto no-scrollbar gap-1 pb-1">
                   {[
                     { id: "general", label: "常规属性" },
                     { id: "basic", label: "基础设置" },
@@ -332,8 +332,8 @@ export function AdminAvatarScreen() {
                         onClick={() => setSettingsTab(tab.id as any)}
                         className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
                           active
-                            ? "bg-[#4F6F52] text-white shadow-sm"
-                            : "text-[#8F9F8F] hover:bg-[#FAF8F5] hover:text-[#3A4D39]"
+                            ? "bg-[#22D3EE] text-white shadow-sm"
+                            : "text-[#6E93A8] hover:bg-[#06121B] hover:text-[#A8CFE0]"
                         }`}
                       >
                         {tab.label}
@@ -348,19 +348,19 @@ export function AdminAvatarScreen() {
                 <div className="space-y-4">
                   {/* Name */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[#3A4D39]">形象名称</label>
+                    <label className="text-xs font-semibold text-[#A8CFE0]">形象名称</label>
                     <input
                       type="text"
                       value={selected.name}
                       onChange={(e) => setSelected({ ...selected, name: e.target.value })}
                       placeholder="给您的数字人起个名字，如：导览小玉"
-                      className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#E6E2D8] focus:border-[#4F6F52] bg-[#FAF8F5] text-[#1E2522]"
+                      className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#1A4F62] focus:border-[#22D3EE] bg-[#06121B] text-[#DDF4FF]"
                     />
                   </div>
 
                   {/* Avatar Type Selector */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[#3A4D39]">形象类型</label>
+                    <label className="text-xs font-semibold text-[#A8CFE0]">形象类型</label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
@@ -373,8 +373,8 @@ export function AdminAvatarScreen() {
                         }}
                         className={`py-2 px-3 text-xs rounded-xl border font-medium transition-all ${
                           !selected.avatarStyle.startsWith("live2d_")
-                            ? "border-[#4F6F52] bg-[#4F6F52]/5 text-[#4F6F52]"
-                            : "border-[#E6E2D8] bg-white text-[#8F9F8F]"
+                            ? "border-[#22D3EE] bg-[#22D3EE]/5 text-[#22D3EE]"
+                            : "border-[#1A4F62] bg-[#0A2130] text-[#6E93A8]"
                         }`}
                       >
                         自定义上传 / 传统形象
@@ -390,8 +390,8 @@ export function AdminAvatarScreen() {
                         }}
                         className={`py-2 px-3 text-xs rounded-xl border font-medium transition-all ${
                           selected.avatarStyle.startsWith("live2d_")
-                            ? "border-[#4F6F52] bg-[#4F6F52]/5 text-[#4F6F52]"
-                            : "border-[#E6E2D8] bg-white text-[#8F9F8F]"
+                            ? "border-[#22D3EE] bg-[#22D3EE]/5 text-[#22D3EE]"
+                            : "border-[#1A4F62] bg-[#0A2130] text-[#6E93A8]"
                         }`}
                       >
                         内置 Live2D 形象
@@ -402,7 +402,7 @@ export function AdminAvatarScreen() {
                   {/* Live2D Character Dropdown */}
                   {selected.avatarStyle.startsWith("live2d_") && (
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-[#3A4D39]">内置 Live2D 模型</label>
+                      <label className="text-xs font-semibold text-[#A8CFE0]">内置 Live2D 模型</label>
                       <select
                         value={selected.avatarStyle.replace("live2d_", "")}
                         onChange={(e) => {
@@ -413,7 +413,7 @@ export function AdminAvatarScreen() {
                             imageUrl: `/sentio/characters/free/${name}/${name}.png`
                           });
                         }}
-                        className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#E6E2D8] focus:border-[#4F6F52] bg-[#FAF8F5] text-[#1E2522]"
+                        className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#1A4F62] focus:border-[#22D3EE] bg-[#06121B] text-[#DDF4FF]"
                       >
                         {["HaruGreeter", "Haru", "Kei", "Chitose", "Epsilon", "Hibiki", "Hiyori", "Izumi", "Mao", "Rice", "Shizuku", "Tsumiki"].map((name) => (
                           <option key={name} value={name}>
@@ -426,7 +426,7 @@ export function AdminAvatarScreen() {
 
                   {/* Voice Selection */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[#3A4D39]">音色风格</label>
+                    <label className="text-xs font-semibold text-[#A8CFE0]">音色风格</label>
                     <div className="space-y-2">
                       {VOICES.map((v) => {
                         const active = selected.voiceStyle === v.id;
@@ -435,18 +435,18 @@ export function AdminAvatarScreen() {
                             key={v.id}
                             onClick={() => setSelected({ ...selected, voiceStyle: v.id })}
                             className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer border transition-all ${
-                              active ? "border-[#D2A053] bg-[#D2A053]/5" : "border-[#E6E2D8] bg-white hover:bg-[#FAF8F5]"
+                              active ? "border-[#FFC857] bg-[#FFC857]/5" : "border-[#1A4F62] bg-[#0A2130] hover:bg-[#06121B]"
                             }`}
                           >
                             <div
                               className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
-                              style={{ border: active ? "2px solid #D2A053" : "2px solid #E6E2D8" }}
+                              style={{ border: active ? "2px solid #FFC857" : "2px solid #1A4F62" }}
                             >
-                              {active && <div className="w-2 h-2 rounded-full bg-[#D2A053]" />}
+                              {active && <div className="w-2 h-2 rounded-full bg-[#FFC857]" />}
                             </div>
                             <div>
-                              <p className="text-[11px] font-semibold text-[#1E2522]">{v.label}</p>
-                              <p className="text-[9px] text-[#8F9F8F] mt-0.5">{v.desc}</p>
+                              <p className="text-[11px] font-semibold text-[#DDF4FF]">{v.label}</p>
+                              <p className="text-[9px] text-[#6E93A8] mt-0.5">{v.desc}</p>
                             </div>
                           </div>
                         );
@@ -459,16 +459,16 @@ export function AdminAvatarScreen() {
                     {[{ key: "speechRate" as const, label: "语速", min: 50, max: 200 }, { key: "pitch" as const, label: "音调", min: 50, max: 200 }].map((p) => (
                       <div key={p.key} className="space-y-1.5">
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-semibold text-[#3A4D39]">{p.label}</span>
-                          <span className="text-xs font-mono font-bold text-[#D2A053]">{selected[p.key]}%</span>
+                          <span className="text-xs font-semibold text-[#A8CFE0]">{p.label}</span>
+                          <span className="text-xs font-mono font-bold text-[#FFC857]">{selected[p.key]}%</span>
                         </div>
                         <div className="relative">
-                          <div className="w-full h-2 rounded-full bg-[#F0EDE5]">
+                          <div className="w-full h-2 rounded-full bg-[#0E2E3E]">
                             <div
                               className="h-full rounded-full"
                               style={{
                                 width: `${((selected[p.key] - p.min) / (p.max - p.min)) * 100}%`,
-                                background: "linear-gradient(90deg,#D2A053,#B8843A)",
+                                background: "linear-gradient(90deg,#FFC857,#E0A93F)",
                               }}
                             />
                           </div>
@@ -488,27 +488,27 @@ export function AdminAvatarScreen() {
 
                   {/* Greeting */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[#3A4D39]">默认问候语</label>
+                    <label className="text-xs font-semibold text-[#A8CFE0]">默认问候语</label>
                     <textarea
                       value={selected.greeting ?? ""}
                       onChange={(e) => setSelected({ ...selected, greeting: e.target.value })}
                       rows={3}
                       placeholder="进入对话时，数字人说的第一句话..."
-                      className="w-full px-3 py-2.5 text-xs rounded-xl outline-none border border-[#E6E2D8] focus:border-[#4F6F52] bg-[#FAF8F5] text-[#1E2522] resize-none"
+                      className="w-full px-3 py-2.5 text-xs rounded-xl outline-none border border-[#1A4F62] focus:border-[#22D3EE] bg-[#06121B] text-[#DDF4FF] resize-none"
                     />
                   </div>
 
                   {/* Default Avatar Toggle */}
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-[#FAF8F5] border border-[#E6E2D8]">
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-[#06121B] border border-[#1A4F62]">
                     <div>
-                      <p className="text-xs font-semibold text-[#1E2522]">设为默认形象</p>
-                      <p className="text-[10px] text-[#8F9F8F] mt-0.5">当游客打开导游对话时默认展示此形象</p>
+                      <p className="text-xs font-semibold text-[#DDF4FF]">设为默认形象</p>
+                      <p className="text-[10px] text-[#6E93A8] mt-0.5">当游客打开导游对话时默认展示此形象</p>
                     </div>
                     <input
                       type="checkbox"
                       checked={selected.isDefault}
                       onChange={(e) => setSelected({ ...selected, isDefault: e.target.checked })}
-                      className="w-4 h-4 rounded border-[#E6E2D8] text-[#4F6F52] focus:ring-[#4F6F52] cursor-pointer"
+                      className="w-4 h-4 rounded border-[#1A4F62] text-[#22D3EE] focus:ring-[#22D3EE] cursor-pointer"
                     />
                   </div>
                 </div>
@@ -518,15 +518,15 @@ export function AdminAvatarScreen() {
               {selected.avatarStyle.startsWith("live2d_") && settingsTab === "basic" && (
                 <div className="space-y-4">
                   <div className="space-y-1">
-                    <h4 className="text-xs font-bold text-[#1E2522]">Live2D 基础交互设定</h4>
-                    <p className="text-[10px] text-[#8F9F8F]">控制数字人在页面上的基本表现与行为模式</p>
+                    <h4 className="text-xs font-bold text-[#DDF4FF]">Live2D 基础交互设定</h4>
+                    <p className="text-[10px] text-[#6E93A8]">控制数字人在页面上的基本表现与行为模式</p>
                   </div>
                   
                   {/* Sound Output Toggle */}
-                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#FAF8F5] border border-[#E6E2D8]">
+                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#06121B] border border-[#1A4F62]">
                     <div>
-                      <p className="text-xs font-semibold text-[#1E2522]">声音播放</p>
-                      <p className="text-[10px] text-[#8F9F8F] mt-0.5">是否播放 TTS 语音合成的声音，关闭后仅有开口动作</p>
+                      <p className="text-xs font-semibold text-[#DDF4FF]">声音播放</p>
+                      <p className="text-[10px] text-[#6E93A8] mt-0.5">是否播放 TTS 语音合成的声音，关闭后仅有开口动作</p>
                     </div>
                     <input
                       type="checkbox"
@@ -536,15 +536,15 @@ export function AdminAvatarScreen() {
                         s.basic = { ...s.basic, sound: e.target.checked };
                         setSelected({ ...selected, settings: s });
                       }}
-                      className="w-4 h-4 rounded border-[#E6E2D8] text-[#4F6F52] focus:ring-[#4F6F52] cursor-pointer"
+                      className="w-4 h-4 rounded border-[#1A4F62] text-[#22D3EE] focus:ring-[#22D3EE] cursor-pointer"
                     />
                   </div>
 
                   {/* Think Bubble Toggle */}
-                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#FAF8F5] border border-[#E6E2D8]">
+                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#06121B] border border-[#1A4F62]">
                     <div>
-                      <p className="text-xs font-semibold text-[#1E2522]">显示思考状态</p>
-                      <p className="text-[10px] text-[#8F9F8F] mt-0.5">在后台处理 AI 回复时，数字人上方是否显示气泡</p>
+                      <p className="text-xs font-semibold text-[#DDF4FF]">显示思考状态</p>
+                      <p className="text-[10px] text-[#6E93A8] mt-0.5">在后台处理 AI 回复时，数字人上方是否显示气泡</p>
                     </div>
                     <input
                       type="checkbox"
@@ -554,26 +554,26 @@ export function AdminAvatarScreen() {
                         s.basic = { ...s.basic, showThink: e.target.checked };
                         setSelected({ ...selected, settings: s });
                       }}
-                      className="w-4 h-4 rounded border-[#E6E2D8] text-[#4F6F52] focus:ring-[#4F6F52] cursor-pointer"
+                      className="w-4 h-4 rounded border-[#1A4F62] text-[#22D3EE] focus:ring-[#22D3EE] cursor-pointer"
                     />
                   </div>
 
                   {/* Lip Sync Factor */}
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-semibold text-[#3A4D39]">口型张合振幅倍数</span>
-                      <span className="text-xs font-mono font-bold text-[#D2A053]">
+                      <span className="text-xs font-semibold text-[#A8CFE0]">口型张合振幅倍数</span>
+                      <span className="text-xs font-mono font-bold text-[#FFC857]">
                         {(selected.settings?.basic?.lipFactor ?? 1.0).toFixed(1)}x
                       </span>
                     </div>
-                    <p className="text-[9px] text-[#8F9F8F] mb-1">调整说话时嘴巴的张开幅度（数值越大张口幅度越大）</p>
+                    <p className="text-[9px] text-[#6E93A8] mb-1">调整说话时嘴巴的张开幅度（数值越大张口幅度越大）</p>
                     <div className="relative">
-                      <div className="w-full h-2 rounded-full bg-[#F0EDE5]">
+                      <div className="w-full h-2 rounded-full bg-[#0E2E3E]">
                         <div
                           className="h-full rounded-full"
                           style={{
                             width: `${(((selected.settings?.basic?.lipFactor ?? 1.0) - 0.1) / (5.0 - 0.1)) * 100}%`,
-                            background: "linear-gradient(90deg,#D2A053,#B8843A)",
+                            background: "linear-gradient(90deg,#FFC857,#E0A93F)",
                           }}
                         />
                       </div>
@@ -599,15 +599,15 @@ export function AdminAvatarScreen() {
               {selected.avatarStyle.startsWith("live2d_") && settingsTab === "asr" && (
                 <div className="space-y-4">
                   <div className="space-y-1">
-                    <h4 className="text-xs font-bold text-[#1E2522]">语音识别 (ASR) 配置</h4>
-                    <p className="text-[10px] text-[#8F9F8F]">配置数字人如何将用户的语音输入识别为文字</p>
+                    <h4 className="text-xs font-bold text-[#DDF4FF]">语音识别 (ASR) 配置</h4>
+                    <p className="text-[10px] text-[#6E93A8]">配置数字人如何将用户的语音输入识别为文字</p>
                   </div>
 
                   {/* Enable ASR Toggle */}
-                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#FAF8F5] border border-[#E6E2D8]">
+                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#06121B] border border-[#1A4F62]">
                     <div>
-                      <p className="text-xs font-semibold text-[#1E2522]">启用语音识别输入</p>
-                      <p className="text-[10px] text-[#8F9F8F] mt-0.5">是否在对话框右侧显示麦克风图标并支持录音识别</p>
+                      <p className="text-xs font-semibold text-[#DDF4FF]">启用语音识别输入</p>
+                      <p className="text-[10px] text-[#6E93A8] mt-0.5">是否在对话框右侧显示麦克风图标并支持录音识别</p>
                     </div>
                     <input
                       type="checkbox"
@@ -617,13 +617,13 @@ export function AdminAvatarScreen() {
                         s.asr = { ...s.asr, enable: e.target.checked };
                         setSelected({ ...selected, settings: s });
                       }}
-                      className="w-4 h-4 rounded border-[#E6E2D8] text-[#4F6F52] focus:ring-[#4F6F52] cursor-pointer"
+                      className="w-4 h-4 rounded border-[#1A4F62] text-[#22D3EE] focus:ring-[#22D3EE] cursor-pointer"
                     />
                   </div>
 
                   {/* ASR Engine Select */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[#3A4D39]">识别引擎</label>
+                    <label className="text-xs font-semibold text-[#A8CFE0]">识别引擎</label>
                     <select
                       value={selected.settings?.asr?.engine ?? "browser"}
                       onChange={(e) => {
@@ -631,7 +631,7 @@ export function AdminAvatarScreen() {
                         s.asr = { ...s.asr, engine: e.target.value };
                         setSelected({ ...selected, settings: s });
                       }}
-                      className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#E6E2D8] focus:border-[#4F6F52] bg-[#FAF8F5] text-[#1E2522]"
+                      className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#1A4F62] focus:border-[#22D3EE] bg-[#06121B] text-[#DDF4FF]"
                     >
                       <option value="browser">浏览器原生识别 (Web Speech API)</option>
                       <option value="whisper">OpenAI Whisper API (高精度)</option>
@@ -641,7 +641,7 @@ export function AdminAvatarScreen() {
                   {/* ASR API Key (if Whisper selected) */}
                   {(selected.settings?.asr?.engine === "whisper") && (
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-[#3A4D39]">Whisper API Key</label>
+                      <label className="text-xs font-semibold text-[#A8CFE0]">Whisper API Key</label>
                       <input
                         type="password"
                         value={selected.settings?.asr?.apiKey ?? ""}
@@ -651,7 +651,7 @@ export function AdminAvatarScreen() {
                           setSelected({ ...selected, settings: s });
                         }}
                         placeholder="sk-..."
-                        className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#E6E2D8] focus:border-[#4F6F52] bg-[#FAF8F5] text-[#1E2522]"
+                        className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#1A4F62] focus:border-[#22D3EE] bg-[#06121B] text-[#DDF4FF]"
                       />
                     </div>
                   )}
@@ -662,15 +662,15 @@ export function AdminAvatarScreen() {
               {selected.avatarStyle.startsWith("live2d_") && settingsTab === "tts" && (
                 <div className="space-y-4">
                   <div className="space-y-1">
-                    <h4 className="text-xs font-bold text-[#1E2522]">语音合成 (TTS) 配置</h4>
-                    <p className="text-[10px] text-[#8F9F8F]">配置数字人说话发音的语音合成服务商</p>
+                    <h4 className="text-xs font-bold text-[#DDF4FF]">语音合成 (TTS) 配置</h4>
+                    <p className="text-[10px] text-[#6E93A8]">配置数字人说话发音的语音合成服务商</p>
                   </div>
 
                   {/* Enable TTS Toggle */}
-                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#FAF8F5] border border-[#E6E2D8]">
+                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#06121B] border border-[#1A4F62]">
                     <div>
-                      <p className="text-xs font-semibold text-[#1E2522]">启用语音合成输出</p>
-                      <p className="text-[10px] text-[#8F9F8F] mt-0.5">AI 回复时是否自动将文字合成为语音播放</p>
+                      <p className="text-xs font-semibold text-[#DDF4FF]">启用语音合成输出</p>
+                      <p className="text-[10px] text-[#6E93A8] mt-0.5">AI 回复时是否自动将文字合成为语音播放</p>
                     </div>
                     <input
                       type="checkbox"
@@ -680,13 +680,13 @@ export function AdminAvatarScreen() {
                         s.tts = { ...s.tts, enable: e.target.checked };
                         setSelected({ ...selected, settings: s });
                       }}
-                      className="w-4 h-4 rounded border-[#E6E2D8] text-[#4F6F52] focus:ring-[#4F6F52] cursor-pointer"
+                      className="w-4 h-4 rounded border-[#1A4F62] text-[#22D3EE] focus:ring-[#22D3EE] cursor-pointer"
                     />
                   </div>
 
                   {/* TTS Engine Select */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[#3A4D39]">合成服务商</label>
+                    <label className="text-xs font-semibold text-[#A8CFE0]">合成服务商</label>
                     <select
                       value={selected.settings?.tts?.engine ?? "browser"}
                       onChange={(e) => {
@@ -694,7 +694,7 @@ export function AdminAvatarScreen() {
                         s.tts = { ...s.tts, engine: e.target.value };
                         setSelected({ ...selected, settings: s });
                       }}
-                      className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#E6E2D8] focus:border-[#4F6F52] bg-[#FAF8F5] text-[#1E2522]"
+                      className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#1A4F62] focus:border-[#22D3EE] bg-[#06121B] text-[#DDF4FF]"
                     >
                       <option value="browser">浏览器原生合成 (SpeechSynthesis)</option>
                       <option value="edge">Edge TTS 流式合成 (默认优质推荐)</option>
@@ -705,7 +705,7 @@ export function AdminAvatarScreen() {
                   {/* TTS API Key (if xfyun selected) */}
                   {(selected.settings?.tts?.engine === "xfyun") && (
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-[#3A4D39]">科大讯飞 API Key / AppID</label>
+                      <label className="text-xs font-semibold text-[#A8CFE0]">科大讯飞 API Key / AppID</label>
                       <input
                         type="password"
                         value={selected.settings?.tts?.apiKey ?? ""}
@@ -715,7 +715,7 @@ export function AdminAvatarScreen() {
                           setSelected({ ...selected, settings: s });
                         }}
                         placeholder="请输入讯飞 APPID|APIKey|APISecret 组合..."
-                        className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#E6E2D8] focus:border-[#4F6F52] bg-[#FAF8F5] text-[#1E2522]"
+                        className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#1A4F62] focus:border-[#22D3EE] bg-[#06121B] text-[#DDF4FF]"
                       />
                     </div>
                   )}
@@ -726,15 +726,15 @@ export function AdminAvatarScreen() {
               {selected.avatarStyle.startsWith("live2d_") && settingsTab === "agent" && (
                 <div className="space-y-4">
                   <div className="space-y-1">
-                    <h4 className="text-xs font-bold text-[#1E2522]">AI 智能体大模型配置</h4>
-                    <p className="text-[10px] text-[#8F9F8F]">配置数字人背后进行文本理解和回复生成的大语言模型</p>
+                    <h4 className="text-xs font-bold text-[#DDF4FF]">AI 智能体大模型配置</h4>
+                    <p className="text-[10px] text-[#6E93A8]">配置数字人背后进行文本理解和回复生成的大语言模型</p>
                   </div>
 
                   {/* Enable Agent Toggle */}
-                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#FAF8F5] border border-[#E6E2D8]">
+                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#06121B] border border-[#1A4F62]">
                     <div>
-                      <p className="text-xs font-semibold text-[#1E2522]">启用AI智能体逻辑</p>
-                      <p className="text-[10px] text-[#8F9F8F] mt-0.5">关闭后仅能使用内置固定应答或景区常见问答库</p>
+                      <p className="text-xs font-semibold text-[#DDF4FF]">启用AI智能体逻辑</p>
+                      <p className="text-[10px] text-[#6E93A8] mt-0.5">关闭后仅能使用内置固定应答或景区常见问答库</p>
                     </div>
                     <input
                       type="checkbox"
@@ -744,13 +744,13 @@ export function AdminAvatarScreen() {
                         s.agent = { ...s.agent, enable: e.target.checked };
                         setSelected({ ...selected, settings: s });
                       }}
-                      className="w-4 h-4 rounded border-[#E6E2D8] text-[#4F6F52] focus:ring-[#4F6F52] cursor-pointer"
+                      className="w-4 h-4 rounded border-[#1A4F62] text-[#22D3EE] focus:ring-[#22D3EE] cursor-pointer"
                     />
                   </div>
 
                   {/* Model Provider */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[#3A4D39]">模型提供商</label>
+                    <label className="text-xs font-semibold text-[#A8CFE0]">模型提供商</label>
                     <select
                       value={selected.settings?.agent?.provider ?? "deepseek"}
                       onChange={(e) => {
@@ -774,7 +774,7 @@ export function AdminAvatarScreen() {
                         s.agent = { ...s.agent, provider: val, model: defaultModel, baseUrl: defaultUrl };
                         setSelected({ ...selected, settings: s });
                       }}
-                      className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#E6E2D8] focus:border-[#4F6F52] bg-[#FAF8F5] text-[#1E2522]"
+                      className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#1A4F62] focus:border-[#22D3EE] bg-[#06121B] text-[#DDF4FF]"
                     >
                       <option value="deepseek">DeepSeek (性价比首选)</option>
                       <option value="openai">OpenAI (ChatGPT 官方)</option>
@@ -786,7 +786,7 @@ export function AdminAvatarScreen() {
 
                   {/* API Key */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[#3A4D39]">API Key (密钥)</label>
+                    <label className="text-xs font-semibold text-[#A8CFE0]">API Key (密钥)</label>
                     <input
                       type="password"
                       value={selected.settings?.agent?.apiKey ?? ""}
@@ -796,13 +796,13 @@ export function AdminAvatarScreen() {
                         setSelected({ ...selected, settings: s });
                       }}
                       placeholder="sk-..."
-                      className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#E6E2D8] focus:border-[#4F6F52] bg-[#FAF8F5] text-[#1E2522]"
+                      className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#1A4F62] focus:border-[#22D3EE] bg-[#06121B] text-[#DDF4FF]"
                     />
                   </div>
 
                   {/* Base URL */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[#3A4D39]">API Base URL</label>
+                    <label className="text-xs font-semibold text-[#A8CFE0]">API Base URL</label>
                     <input
                       type="text"
                       value={selected.settings?.agent?.baseUrl ?? ""}
@@ -812,13 +812,13 @@ export function AdminAvatarScreen() {
                         setSelected({ ...selected, settings: s });
                       }}
                       placeholder="https://api.deepseek.com/v1"
-                      className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#E6E2D8] focus:border-[#4F6F52] bg-[#FAF8F5] text-[#1E2522]"
+                      className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#1A4F62] focus:border-[#22D3EE] bg-[#06121B] text-[#DDF4FF]"
                     />
                   </div>
 
                   {/* Model Name */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[#3A4D39]">模型名称 (Model)</label>
+                    <label className="text-xs font-semibold text-[#A8CFE0]">模型名称 (Model)</label>
                     <input
                       type="text"
                       value={selected.settings?.agent?.model ?? ""}
@@ -828,13 +828,13 @@ export function AdminAvatarScreen() {
                         setSelected({ ...selected, settings: s });
                       }}
                       placeholder="deepseek-chat"
-                      className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#E6E2D8] focus:border-[#4F6F52] bg-[#FAF8F5] text-[#1E2522]"
+                      className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-[#1A4F62] focus:border-[#22D3EE] bg-[#06121B] text-[#DDF4FF]"
                     />
                   </div>
 
                   {/* System Prompt */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[#3A4D39]">系统人设提示词 (System Prompt)</label>
+                    <label className="text-xs font-semibold text-[#A8CFE0]">系统人设提示词 (System Prompt)</label>
                     <textarea
                       value={selected.settings?.agent?.prompt ?? ""}
                       onChange={(e) => {
@@ -844,18 +844,18 @@ export function AdminAvatarScreen() {
                       }}
                       rows={3}
                       placeholder="例如：你是一个古风知性的导览小姐姐，说话会带上一些古诗词..."
-                      className="w-full px-3 py-2.5 text-xs rounded-xl outline-none border border-[#E6E2D8] focus:border-[#4F6F52] bg-[#FAF8F5] text-[#1E2522] resize-none"
+                      className="w-full px-3 py-2.5 text-xs rounded-xl outline-none border border-[#1A4F62] focus:border-[#22D3EE] bg-[#06121B] text-[#DDF4FF] resize-none"
                     />
                   </div>
                 </div>
               )}
 
-              <div className="pt-2 flex gap-3 border-t border-[#F0EDE5]">
+              <div className="pt-2 flex gap-3 border-t border-[#0E2E3E]">
                 {selected.id !== 0 && (
                   <button
                     type="button"
                     onClick={() => deleteConfig(selected.id)}
-                    className="flex-1 py-3 border border-red-200 hover:bg-red-50 text-red-500 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                    className="flex-1 py-3 border border-[#6B2130] hover:bg-[#3A1220] text-[#FF6B81] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
                   >
                     <Trash2 className="w-4 h-4" /> 删除形象
                   </button>
@@ -864,9 +864,10 @@ export function AdminAvatarScreen() {
                   whileTap={{ scale: 0.97 }}
                   onClick={save}
                   disabled={saving}
-                  className="flex-1 py-3 rounded-xl font-bold text-xs text-white flex items-center justify-center gap-2 shadow-md"
+                  className="flex-1 py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-md"
                   style={{
-                    background: saving ? "#8F9F8F" : "linear-gradient(135deg,#4F6F52,#3A5240)",
+                    background: saving ? "#6E93A8" : "linear-gradient(135deg,#9DF7FF,#17B6D6)",
+                    color: saving ? "#DDF4FF" : "#032029",
                     fontFamily: "var(--font-noto-serif)",
                   }}
                 >
@@ -877,14 +878,14 @@ export function AdminAvatarScreen() {
             </div>
 
             {/* Preview and Upload */}
-            <div className="w-full admin-preview-column bg-white p-5 rounded-2xl border border-[#E6E2D8] shadow-sm flex flex-col items-center space-y-4">
-              <h3 className="text-sm font-semibold text-[#1E2522] border-b border-[#F0EDE5] pb-2 w-full text-center" style={{ fontFamily: "var(--font-noto-serif)" }}>
+            <div className="w-full admin-preview-column bg-[#0A2130] p-5 rounded-2xl border border-[#1A4F62] shadow-sm flex flex-col items-center space-y-4">
+              <h3 className="text-sm font-semibold text-[#DDF4FF] border-b border-[#0E2E3E] pb-2 w-full text-center" style={{ fontFamily: "var(--font-noto-serif)" }}>
                 媒体与预览
               </h3>
 
               {/* Avatar frame */}
               <div
-                className="relative flex items-center justify-center overflow-hidden w-full aspect-[4/5] max-w-[240px] rounded-[24px] border-4 border-[#D2A053] bg-[#1A2520] shadow-xl"
+                className="relative flex items-center justify-center overflow-hidden w-full aspect-[4/5] max-w-[240px] rounded-[24px] border-4 border-[#FFC857] bg-[#04141D] shadow-xl"
               >
                 {selected.avatarStyle ? (
                   isVideo ? (
@@ -905,8 +906,8 @@ export function AdminAvatarScreen() {
                   )
                 ) : (
                   <div className="text-center p-4">
-                    <UserCheck className="w-10 h-10 mx-auto text-[#D2A053] opacity-40 mb-2" />
-                    <p className="text-[11px] text-[#8F9F8F]">暂无形象照片/视频</p>
+                    <UserCheck className="w-10 h-10 mx-auto text-[#FFC857] opacity-40 mb-2" />
+                    <p className="text-[11px] text-[#6E93A8]">暂无形象照片/视频</p>
                   </div>
                 )}
 
@@ -930,48 +931,48 @@ export function AdminAvatarScreen() {
                   />
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full py-2.5 border border-[#E6E2D8] hover:bg-[#FAF8F5] text-[#3A4D39] rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
+                    className="w-full py-2.5 border border-[#1A4F62] hover:bg-[#06121B] text-[#A8CFE0] rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
                   >
-                    <Upload className="w-4 h-4 text-[#4F6F52]" /> 上传新形象 (图片/视频)
+                    <Upload className="w-4 h-4 text-[#22D3EE]" /> 上传新形象 (图片/视频)
                   </button>
-                  <p className="text-[9px] text-[#8F9F8F] text-center">
+                  <p className="text-[9px] text-[#6E93A8] text-center">
                     支持 JPG, PNG 格式图片，或 MP4 格式视频数字人
                   </p>
                 </div>
               ) : (
-                <div className="w-full text-center py-2.5 text-[10px] text-[#8F9F8F] bg-[#FAF8F5] rounded-xl border border-[#E6E2D8]">
+                <div className="w-full text-center py-2.5 text-[10px] text-[#6E93A8] bg-[#06121B] rounded-xl border border-[#1A4F62]">
                   ✨ 已选用内置 Live2D 数字人模型形象
                 </div>
               )}
 
               {/* Voice waves */}
-              <div className="w-full bg-[#FAF8F5] p-3.5 rounded-xl border border-[#E6E2D8] flex items-center gap-3">
+              <div className="w-full bg-[#06121B] p-3.5 rounded-xl border border-[#1A4F62] flex items-center gap-3">
                 <div className="flex gap-0.5 items-end">
                   {[3, 6, 4, 8, 5, 7, 3].map((h, i) => (
                     <motion.div
                       key={i}
                       animate={{ height: [h, h * 1.5, h] }}
                       transition={{ duration: 0.8, delay: i * 0.1, repeat: Infinity }}
-                      className="w-1 rounded-full bg-[#4F6F52]"
+                      className="w-1 rounded-full bg-[#22D3EE]"
                       style={{ height: h * (selected.speechRate / 100) }}
                     />
                   ))}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold text-[#3A4D39]">合成音色展示</p>
-                  <p className="text-[9px] text-[#8F9F8F] truncate">
+                  <p className="text-[10px] font-bold text-[#A8CFE0]">合成音色展示</p>
+                  <p className="text-[9px] text-[#6E93A8] truncate">
                     {VOICES.find((v) => v.id === selected.voiceStyle)?.label || "预设"}音色 · {selected.speechRate}% 语速
                   </p>
                 </div>
-                <Volume2 className="w-4 h-4 text-[#D2A053]" />
+                <Volume2 className="w-4 h-4 text-[#FFC857]" />
               </div>
             </div>
           </>
         ) : (
-          <div className="lg:col-span-9 flex flex-col items-center justify-center py-20 text-[#8F9F8F] bg-white border border-[#E6E2D8] rounded-2xl shadow-sm">
+          <div className="lg:col-span-9 flex flex-col items-center justify-center py-20 text-[#6E93A8] bg-[#0A2130] border border-[#1A4F62] rounded-2xl shadow-sm">
             <UserCheck className="w-16 h-16 opacity-30 mb-3" />
             <p className="text-sm">请从左侧选择一个数字人预设进行配置</p>
-            <p className="text-xs text-zinc-400 mt-1">或点击右上角的“新建数字人”按钮</p>
+            <p className="text-xs text-[#6E93A8] mt-1">或点击右上角的“新建数字人”按钮</p>
           </div>
         )}
       </div>

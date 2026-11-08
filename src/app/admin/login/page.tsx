@@ -38,29 +38,29 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-svh w-full flex items-center justify-center bg-[#FAF8F5] px-4 relative overflow-hidden">
+    <div className="tech-screen min-h-svh w-full flex items-center justify-center px-4 relative overflow-hidden">
       
       {/* Decorative background gradients */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#D2A053]/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-[#4F6F52]/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-[#5CECFF]/5 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Centered Login Card */}
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        className="w-full max-w-md bg-white border border-[#E6E2D8] rounded-3xl p-8 shadow-2xl relative"
+        className="w-full max-w-md bg-[#081E2A]/92 border border-[#1A4F62] rounded-3xl p-8 shadow-2xl relative backdrop-blur-md"
       >
         {/* Back button */}
         <button
           onClick={() => router.push("/home")}
-          className="absolute top-6 left-6 flex items-center gap-1.5 text-xs font-semibold text-neutral-400 hover:text-neutral-700 transition-colors"
+          className="absolute top-6 left-6 flex items-center gap-1.5 text-xs font-semibold text-[#7FA9BE] hover:text-[#DDF4FF] transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> 返回主页
         </button>
 
         {/* Brand Logo Header */}
         <div className="text-center space-y-3 mt-4 mb-8">
-          <div className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center flex-shrink-0 shadow-md shadow-[#D2A053]/10 relative border border-neutral-200 mx-auto">
+          <div className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center flex-shrink-0 shadow-md shadow-[#5CECFF]/10 relative border border-[#1A4F62] mx-auto">
             <Image
               src="/image/logo.webp"
               alt="Logo"
@@ -70,41 +70,41 @@ export default function AdminLoginPage() {
             />
           </div>
           <div>
-            <h2 className="text-xl font-black text-neutral-900 tracking-tight" style={{ fontFamily: "var(--font-noto-serif)" }}>
+            <h2 className="text-xl font-black text-[#EAFAFF] tracking-tight" style={{ fontFamily: "var(--font-noto-serif)", textShadow: "0 0 16px rgba(92,236,255,0.4)" }}>
               运营管理后台登录
             </h2>
-            <p className="text-xs text-neutral-500 mt-1 font-medium">请验证管理员账号以继续访问后台</p>
+            <p className="text-xs text-[#7FA9BE] mt-1 font-medium">请验证管理员账号以继续访问后台</p>
           </div>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-neutral-700">管理账号</label>
+            <label className="text-xs font-bold text-[#A8CFE0]">管理账号</label>
             <div className="relative">
-              <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
+              <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-[#4E7F94]" />
               <input
                 type="email"
                 required
                 placeholder="wyxcode@qq.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[#FAF8F5] focus:bg-white border border-[#E6E2D8] focus:border-[#D2A053] text-sm text-neutral-900 pl-10 pr-4 py-3 rounded-xl focus:outline-none transition-all placeholder:text-neutral-400"
+                className="w-full bg-[#0B2534] focus:bg-[#0E2E3E] border border-[#1A4F62] focus:border-[#5CECFF] text-sm text-[#DDF4FF] pl-10 pr-4 py-3 rounded-xl focus:outline-none transition-all placeholder:text-[#4E7F94]"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-neutral-700">登录密码</label>
+            <label className="text-xs font-bold text-[#A8CFE0]">登录密码</label>
             <div className="relative">
-              <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-neutral-400" />
+              <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-[#4E7F94]" />
               <input
                 type="password"
                 required
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[#FAF8F5] focus:bg-white border border-[#E6E2D8] focus:border-[#D2A053] text-sm text-neutral-900 pl-10 pr-4 py-3 rounded-xl focus:outline-none transition-all placeholder:text-neutral-400"
+                className="w-full bg-[#0B2534] focus:bg-[#0E2E3E] border border-[#1A4F62] focus:border-[#5CECFF] text-sm text-[#DDF4FF] pl-10 pr-4 py-3 rounded-xl focus:outline-none transition-all placeholder:text-[#4E7F94]"
               />
             </div>
           </div>
@@ -112,26 +112,26 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 rounded-xl text-sm font-bold text-white bg-[#D2A053] hover:bg-[#b8843a] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#D2A053]/15 mt-6"
+            className="w-full py-3.5 rounded-xl text-sm font-bold text-[#032029] bg-gradient-to-r from-[#9DF7FF] to-[#17B6D6] hover:brightness-110 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(92,236,255,0.35)] mt-6"
           >
             {loading ? "正在验证身份..." : "安全登录后台"}
           </button>
         </form>
 
         {/* Test Account Quick Login Section */}
-        <div className="mt-6 pt-5 border-t border-[#E6E2D8] bg-[#FAF8F5] p-4 rounded-2xl border border-dashed border-[#D2A053]/50">
+        <div className="mt-6 pt-5 border-t border-[#1A4F62] bg-[#0B2534] p-4 rounded-2xl border border-dashed border-[#D2A053]/50">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-black text-[#B8843A] uppercase tracking-wider">🔑 测试演示管理员账号</span>
-            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">免密体验</span>
+            <span className="text-[11px] font-black text-[#FFC857] uppercase tracking-wider">🔑 测试演示管理员账号</span>
+            <span className="text-[10px] font-bold text-[#3DFDC0] bg-[rgba(61,253,192,0.12)] px-2 py-0.5 rounded-full border border-[rgba(61,253,192,0.3)]">免密体验</span>
           </div>
-          <div className="space-y-1 text-xs font-mono text-neutral-700 bg-white p-2.5 rounded-xl border border-neutral-200 mb-3">
+          <div className="space-y-1 text-xs font-mono text-[#A8CFE0] bg-[#081E2A] p-2.5 rounded-xl border border-[#1A4F62] mb-3">
             <div className="flex justify-between">
-              <span className="text-neutral-400">账号：</span>
-              <span className="font-bold text-neutral-900">wyxcode@qq.com</span>
+              <span className="text-[#7FA9BE]">账号：</span>
+              <span className="font-bold text-[#DDF4FF]">wyxcode@qq.com</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-neutral-400">密码：</span>
-              <span className="font-bold text-neutral-900">123456</span>
+              <span className="text-[#7FA9BE]">密码：</span>
+              <span className="font-bold text-[#DDF4FF]">123456</span>
             </div>
           </div>
           <button

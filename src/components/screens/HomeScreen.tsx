@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { getLocalScenicImage } from "@/lib/scenic-image";
+import { VrPanoramaModal } from "@/components/ui/VrPanoramaModal";
 
 const SPRING = { type: "spring" as const, stiffness: 300, damping: 32 };
 interface Spot { id: number; name: string; imageUrl: string; rating: number; duration: number }
@@ -45,6 +46,7 @@ function PCView() {
   const [spots, setSpots] = useState<Spot[]>([]);
   const [loading, setLoading] = useState(false);
   const [bannerIndex, setBannerIndex] = useState(0);
+  const [showVrPanorama, setShowVrPanorama] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setBannerIndex((i) => (i + 1) % CITY_BANNERS.length), 4200);
@@ -244,7 +246,7 @@ function PCView() {
 
           <motion.div
             whileHover={{ y: -4 }}
-            onClick={() => router.push("/vr-recognize")}
+            onClick={() => setShowVrPanorama(true)}
             className="relative bg-gradient-to-br from-[#EEF7F2] to-[#E8F2EC] border border-[#D5EDE0] rounded-3xl p-6 min-h-[120px] flex items-center justify-between overflow-hidden shadow-sm cursor-pointer group"
           >
             <div className="space-y-2 relative z-10">
@@ -323,6 +325,8 @@ function PCView() {
           </div>
         </div>
       </footer>
+
+      <VrPanoramaModal open={showVrPanorama} onClose={() => setShowVrPanorama(false)} />
     </div>
   );
 }
@@ -584,8 +588,10 @@ function MobileChengduPanel() {
    ═══════════════════════════════════════════════════════ */
 function MobileEntranceCards() {
   const router = useRouter();
+  const [showVrPanorama, setShowVrPanorama] = useState(false);
 
   return (
+    <>
     <div className="px-4 mt-4 grid grid-cols-3 gap-2 select-none">
       {/* 1. 全国热门 */}
       <motion.div
@@ -630,7 +636,7 @@ function MobileEntranceCards() {
       {/* 3. VR 识别 */}
       <motion.div
         whileTap={{ scale: 0.96 }}
-        onClick={() => router.push("/vr-recognize")}
+        onClick={() => setShowVrPanorama(true)}
         className="relative bg-gradient-to-br from-[#EEF7F2] to-[#E8F2EC] border border-[#D5EDE0] rounded-2xl p-2.5 h-[84px] flex flex-col justify-between overflow-hidden shadow-[0_2px_8px_rgba(79,111,82,0.03)] cursor-pointer"
       >
         <div className="flex flex-col">
@@ -648,6 +654,9 @@ function MobileEntranceCards() {
         </span>
       </motion.div>
     </div>
+
+    <VrPanoramaModal open={showVrPanorama} onClose={() => setShowVrPanorama(false)} />
+    </>
   );
 }
 
