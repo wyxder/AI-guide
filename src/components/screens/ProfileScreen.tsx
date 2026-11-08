@@ -16,6 +16,7 @@ import { request } from "@/lib/api/request";
 import { toast } from "sonner";
 import { getLocalScenicImage } from "@/lib/scenic-image";
 import { NATIONAL_SPOTS } from "@/lib/data/national-spots";
+import { DEFAULT_VOICE_ID, resolveVoiceOption, VOICE_OPTIONS } from "@/lib/voice/presets";
 
 const SPRING = { type: "spring" as const, stiffness: 280, damping: 35 };
 
@@ -129,7 +130,12 @@ export function ProfileScreen() {
   const [notiGuide, setNotiGuide] = useState(true);
   const [notiDaily, setNotiDaily] = useState(false);
 
-  const [voiceSpeaker, setVoiceSpeaker] = useState("female_xiaoxiao");
+  const [voiceSpeaker, setVoiceSpeaker] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return resolveVoiceOption(localStorage.getItem("guide_selected_voice_id")).id;
+    }
+    return DEFAULT_VOICE_ID;
+  });
   const [voiceSpeed, setVoiceSpeed] = useState(1.0);
   const [voiceBgmVolume, setVoiceBgmVolume] = useState(30);
 
@@ -1252,31 +1258,40 @@ export function ProfileScreen() {
                           {/* Speaker selector */}
                           <div className="rounded-3xl border border-[#EEF2F0] p-4 bg-white space-y-3">
                             <h4 className="text-xs font-black text-zinc-800">选择讲解员音色</h4>
-                            <div className="grid grid-cols-4 gap-2">
-                              {[
-                                { id: "xinxin", name: "欣欣", label: "甜美女生", img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&q=80" },
-                                { id: "xiaoyu", name: "小玉", label: "江南古韵", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80" },
-                                { id: "dazhuang", name: "大壮", label: "磁性男中音", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80" },
-                                { id: "star", name: "智多星", label: "说书泰斗", img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80" }
-                              ].map((sp) => (
+                            <div className="grid grid-cols-3 gap-2">
+                              {VOICE_OPTIONS.map((opt) => (
                                 <button
-                                  key={sp.id}
+                                  key={opt.id}
                                   type="button"
                                   onClick={() => {
-                                    setVoiceSpeaker(sp.id);
-                                    toast.success(`配音员已成功切换为：${sp.name}`);
+                                    setVoiceSpeaker(opt.id);
+                                    try {
+                                      localStorage.setItem("guide_selected_voice_id", opt.id);
+                                    } catch {}
+                                    toast.success(`讲解员音色已切换为：${opt.name}`);
+                                    const preview = new Audio(
+                                      `/api/qa/tts?voice=${opt.voiceId}&text=${encodeURIComponent(`您好！我是${opt.avatarName}，很高兴为您服务！`)}`
+                                    );
+                                    preview.play().catch(() => {});
                                   }}
-                                  className={`p-2 rounded-2xl border text-center transition-all cursor-pointer ${voiceSpeaker === sp.id
+                                  className={`p-2 rounded-2xl border text-center transition-all cursor-pointer ${voiceSpeaker === opt.id
                                     ? "bg-[#EBF3EE] border-[#4F6F52] text-[#4F6F52]"
                                     : "bg-white border-zinc-100 text-zinc-600 hover:bg-zinc-50"
                                   }`}
                                 >
-                                  <img src={sp.img} className="w-10 h-10 rounded-full mx-auto object-cover mb-1.5" alt="" />
-                                  <p className="text-[10px] font-black leading-none">{sp.name}</p>
-                                  <p className="text-[7.5px] text-zinc-400 mt-1 leading-none truncate">{sp.label}</p>
+                                  <span
+                                    className={`w-9 h-9 rounded-full mx-auto mb-1.5 flex items-center justify-center text-xs font-black ${
+                                      opt.gender === "female" ? "bg-pink-50 text-pink-500" : "bg-blue-50 text-blue-500"
+                                    }`}
+                                  >
+                                    {opt.avatarName.slice(0, 1)}
+                                  </span>
+                                  <p className="text-[10px] font-black leading-none truncate">{opt.name}</p>
+                                  <p className="text-[7.5px] text-zinc-400 mt-1 leading-none truncate">{opt.tag}</p>
                                 </button>
                               ))}
                             </div>
+                            <p className="text-[9px] text-zinc-400">音色来自 SophNet CosyVoice-v2 模型，切换后同步到 AI 导游对话页</p>
                           </div>
 
                           {/* Speech Speed */}

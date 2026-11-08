@@ -23,7 +23,7 @@ export function AvatarSelectorModal({
   onUploadClick,
 }: AvatarSelectorModalProps) {
   const [activeTab, setActiveTab] = useState<"presets" | "custom">("presets");
-  const [activeGender, setActiveGender] = useState<"all" | "live2d" | "female" | "male">("all");
+  const [activeGender, setActiveGender] = useState<"all" | "live2d">("all");
 
   const triggerHaptic = () => {
     if (typeof window !== "undefined" && "vibrate" in navigator) {
@@ -31,22 +31,10 @@ export function AvatarSelectorModal({
     }
   };
 
-  const isMale = (avatar: any) => {
-    const maleNames = ["元气少年", "商业精英", "潮流酷哥", "阳光运动男", "儒雅书生", "男生", "帅气"];
-    return (
-      maleNames.some((m) => avatar.name?.includes(m)) ||
-      avatar.avatarStyle?.includes("male")
-    );
-  };
-
   const filteredPresets = useMemo(() => {
     return allAvatars.filter((a) => {
-      const isLive2D = a.avatarStyle?.startsWith("live2d_");
-      if (activeGender === "live2d") return isLive2D;
-      if (activeGender === "all") return true;
-      if (isLive2D) return false;
-      const male = isMale(a);
-      return activeGender === "male" ? male : !male;
+      if (activeGender === "live2d") return a.avatarStyle?.startsWith("live2d_");
+      return true;
     });
   }, [allAvatars, activeGender]);
 
@@ -109,7 +97,7 @@ export function AvatarSelectorModal({
         {/* Gender Filters (Only show for Preset tab) */}
         {activeTab === "presets" && (
           <div className="px-6 py-2 flex gap-1.5 justify-center flex-shrink-0">
-            {["all", "live2d", "female", "male"].map((tab) => (
+            {["all", "live2d"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveGender(tab as any)}
@@ -119,7 +107,7 @@ export function AvatarSelectorModal({
                     : "bg-white border-neutral-200 text-neutral-500 hover:bg-neutral-50"
                 }`}
               >
-                {tab === "all" ? "全部" : tab === "live2d" ? "Live2D卡通" : tab === "female" ? "女生" : "男生"}
+                {tab === "all" ? "全部" : "Live2D 形象"}
               </button>
             ))}
           </div>

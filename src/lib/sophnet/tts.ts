@@ -15,7 +15,8 @@ const DEFAULT_TTS_URL = [
   "api/open-apis/projects/easyllms/voice",
   "synthesize-audio-stream",
 ].join("/");
-const DEFAULT_VOICE = ["long", "jiqi"].join("");
+// 默认音色改为龙小淳（温柔知性女声），避免使用偏机械感的旧默认音色
+const DEFAULT_VOICE = ["long", "xiaochun_v2"].join("");
 
 /** 与产业链默认输出一致的音频格式：16k 单声道 128kbps MP3 */
 export const SOPHNET_TTS_FORMAT = "MP3_16000HZ_MONO_128KBPS";

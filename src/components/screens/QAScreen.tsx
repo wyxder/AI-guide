@@ -12,6 +12,12 @@ import { SatisfactionModal } from "@/components/ui/SatisfactionModal";
 import { DigitalAvatar, type AvatarState } from "@/components/ui/DigitalAvatar";
 import { AvatarSelectorModal } from "@/components/ui/AvatarSelectorModal";
 import { toast } from "sonner";
+import {
+  DEFAULT_VOICE_ID,
+  resolveVoiceOption,
+  type VoiceOption,
+  VOICE_OPTIONS,
+} from "@/lib/voice/presets";
 
 const SPRING = { type: "spring" as const, stiffness: 280, damping: 35 };
 interface Message { role: "user" | "assistant"; content: string; timestamp: string }
@@ -26,87 +32,6 @@ const BG_PRESETS = [
   { id: "hangzhou", label: "杭州", url: "/background/杭州.png" },
   { id: "pavilion", label: "山景", url: "/images/spots/10024.webp" },
   { id: "chongqing", label: "重庆", url: "/background/重庆.png" },
-];
-
-export interface VoiceOption {
-  id: string;
-  name: string;
-  desc: string;
-  gender: "female" | "male";
-  avatarName: string;
-  tag: string;
-  pitch: number;
-  rate: number;
-  keywords: string[];
-}
-
-export const VOICE_OPTIONS: VoiceOption[] = [
-  {
-    id: "female_xiaoxiao",
-    name: "清甜小玉 (专属高定女声)",
-    desc: "清甜甜美 · 灵动优美 · 数字人官方默认",
-    gender: "female",
-    avatarName: "导游小玉",
-    tag: "默认女声",
-    pitch: 1.18,
-    rate: 0.98,
-    keywords: ["xiaoxiao", "晓晓", "xiaoyi", "晓伊", "huihui", "慧慧", "ting-ting", "mei-jia", "female", "女", "google"]
-  },
-  {
-    id: "female_xiaoyi",
-    name: "知性翠竹 (温婉优雅女声)",
-    desc: "温婉优雅 · 吐字清晰 · 如沐春风",
-    gender: "female",
-    avatarName: "导游翠竹",
-    tag: "知性女声",
-    pitch: 1.05,
-    rate: 0.95,
-    keywords: ["xiaoyi", "晓伊", "xiaoxuan", "晓萱", "huihui", "慧慧", "xiaoxiao", "晓晓", "ting-ting", "mei-jia", "female", "女"]
-  },
-  {
-    id: "female_yaoyao",
-    name: "软萌小妹 (元气活泼女声)",
-    desc: "朝气蓬勃 · 软萌亲切 · 活泼灵动",
-    gender: "female",
-    avatarName: "导游小萌",
-    tag: "活泼女声",
-    pitch: 1.28,
-    rate: 1.02,
-    keywords: ["yaoyao", "瑶瑶", "xiaoxiao", "晓晓", "female", "女"]
-  },
-  {
-    id: "male_yunxi",
-    name: "阳光子轩 (清爽活力男声)",
-    desc: "阳光温暖 · 清爽自然 · 充满活力",
-    gender: "male",
-    avatarName: "导游子轩",
-    tag: "活力男声",
-    pitch: 0.92,
-    rate: 1.0,
-    keywords: ["yunxi", "云希", "yunjian", "云健", "kangkang", "康康", "male", "男"]
-  },
-  {
-    id: "male_yunjian",
-    name: "沉稳伟祺 (睿智磁性男声)",
-    desc: "睿智沉稳 · 磁性干练 · 专业严谨",
-    gender: "male",
-    avatarName: "导游伟祺",
-    tag: "磁性男声",
-    pitch: 0.82,
-    rate: 0.94,
-    keywords: ["yunjian", "云健", "yunyang", "云扬", "male", "男"]
-  },
-  {
-    id: "male_zhemai",
-    name: "古风诗仙 (雅韵吟诵男声)",
-    desc: "古风古韵 · 满腹经纶 · 朗朗上口",
-    gender: "male",
-    avatarName: "诗仙李白",
-    tag: "古风男声",
-    pitch: 0.88,
-    rate: 0.92,
-    keywords: ["zhemai", "哲麦", "yunxi", "云希", "male", "男"]
-  }
 ];
 
 function getVoiceForOption(opt: VoiceOption): SpeechSynthesisVoice | null {
@@ -268,9 +193,13 @@ export function QAScreen() {
       audioRef.current = null;
     }
     try {
+      window.speechSynthesis?.cancel();
+    } catch (e) {}
+    try {
       const { Live2dManager } = require("@/lib/live2d/live2dManager");
       Live2dManager.getInstance().stopAudio();
     } catch (e) {}
+    setIsSynthesizing(false);
     setAvatarState("idle");
   };
 
@@ -291,13 +220,12 @@ export function QAScreen() {
   const [bgImage, setBgImage] = useState<string>("/background/北京.png");
   const [showBgMenu, setShowBgMenu] = useState(false);
 
-  // Voice selection state (Default voice: female_xiaoxiao - 清甜小玉 (专属高定女声))
+  // 音色选择状态：默认 SophNet CosyVoice-v2 的龙小淳（温柔知性女声）
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("guide_selected_voice_id");
-      if (saved) return saved;
+      return resolveVoiceOption(localStorage.getItem("guide_selected_voice_id")).id;
     }
-    return "female_xiaoxiao";
+    return DEFAULT_VOICE_ID;
   });
   const [showVoiceMenu, setShowVoiceMenu] = useState<boolean>(false);
 
@@ -360,8 +288,9 @@ export function QAScreen() {
   useEffect(() => {
     loadAvatars();
     try {
-      const savedVoice = localStorage.getItem("guide_selected_voice_id");
-      if (savedVoice) setSelectedVoiceId(savedVoice);
+      const resolvedVoice = resolveVoiceOption(localStorage.getItem("guide_selected_voice_id"));
+      setSelectedVoiceId(resolvedVoice.id);
+      localStorage.setItem("guide_selected_voice_id", resolvedVoice.id);
     } catch {}
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.getVoices();
@@ -583,6 +512,122 @@ export function QAScreen() {
     return () => clearTimeout(t);
   }, [loading, messages]);
 
+  /** Web Speech API 兜底：仅在服务端 SophNet 合成失败时使用 */
+  const speakWithWebSpeech = (text: string, currentOpt: VoiceOption) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      setIsSynthesizing(false);
+      setAvatarState("idle");
+      return;
+    }
+    try {
+      window.speechSynthesis.cancel();
+      const sentences = text.match(/[^。！？!?；;]+[。！？!?；;]?/g) || [text];
+      let idx = 0;
+
+      const speakSentence = () => {
+        if (idx >= sentences.length) {
+          setIsSynthesizing(false);
+          setAvatarState("idle");
+          try {
+            const { Live2dManager } = require("@/lib/live2d/live2dManager");
+            Live2dManager.getInstance().setSpeaking(false);
+          } catch (e) {}
+          return;
+        }
+        const utter = new SpeechSynthesisUtterance(sentences[idx]);
+        utter.lang = "zh-CN";
+
+        const voiceObj = getVoiceForOption(currentOpt);
+        if (voiceObj) {
+          utter.voice = voiceObj;
+        }
+
+        utter.rate = (avatarConfig?.speechRate || Math.round(currentOpt.rate * 100)) / 100;
+        utter.pitch = currentOpt.pitch;
+        utter.volume = 1.0;
+
+        utter.onstart = () => {
+          setIsSynthesizing(false);
+          setAvatarState("speaking");
+          try {
+            const { Live2dManager } = require("@/lib/live2d/live2dManager");
+            Live2dManager.getInstance().setSpeaking(true);
+            Live2dManager.getInstance().triggerSpeakMotion();
+          } catch (e) {}
+        };
+        utter.onend = () => {
+          idx++;
+          speakSentence();
+        };
+        utter.onerror = () => {
+          idx++;
+          speakSentence();
+        };
+
+        window.speechSynthesis.speak(utter);
+      };
+
+      speakSentence();
+    } catch (err) {
+      setIsSynthesizing(false);
+      setAvatarState("idle");
+    }
+  };
+
+  /** 播放服务端合成的音频：Live2D 走音频队列，普通形象走 Audio 元素 */
+  const playServerAudio = async (blob: Blob) => {
+    const isLive2D = avatarConfig?.avatarStyle?.startsWith("live2d_");
+
+    if (isLive2D) {
+      const arrayBuffer = await blob.arrayBuffer();
+      const { Live2dManager } = require("@/lib/live2d/live2dManager");
+      const manager = Live2dManager.getInstance();
+      manager.onAudioStarted = () => {
+        setIsSynthesizing(false);
+        setAvatarState("speaking");
+        manager.setSpeaking(true);
+        manager.triggerSpeakMotion();
+      };
+      manager.onAudioEnded = () => {
+        setAvatarState("idle");
+        manager.setSpeaking(false);
+      };
+      manager.pushAudioQueue(arrayBuffer);
+      return;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.volume = 1.0;
+    audioRef.current = audio;
+    audio.onplay = () => {
+      setIsSynthesizing(false);
+      setAvatarState("speaking");
+      try {
+        const { Live2dManager } = require("@/lib/live2d/live2dManager");
+        Live2dManager.getInstance().setSpeaking(true);
+        Live2dManager.getInstance().triggerSpeakMotion();
+      } catch (e) {}
+    };
+    audio.onended = () => {
+      setAvatarState("idle");
+      try {
+        const { Live2dManager } = require("@/lib/live2d/live2dManager");
+        Live2dManager.getInstance().setSpeaking(false);
+      } catch (e) {}
+      URL.revokeObjectURL(url);
+    };
+    audio.onerror = () => {
+      setAvatarState("idle");
+      try {
+        const { Live2dManager } = require("@/lib/live2d/live2dManager");
+        Live2dManager.getInstance().setSpeaking(false);
+      } catch (e) {}
+      URL.revokeObjectURL(url);
+    };
+    await audio.play();
+  };
+
   const speak = async (text: string) => {
     if (!ttsEnabled) return;
     stopAudio();
@@ -591,140 +636,37 @@ export function QAScreen() {
     if (!cleanedText) return;
 
     setIsSynthesizing(true);
-    const currentOpt = VOICE_OPTIONS.find((v) => v.id === selectedVoiceId) || VOICE_OPTIONS[0];
+    const currentOpt = resolveVoiceOption(selectedVoiceId);
 
-    // Ultra-low latency voice playback: Start Web Speech API immediately with matched voice option
-    let webSpeechActive = false;
-    if ("speechSynthesis" in window) {
-      try {
-        window.speechSynthesis.cancel();
-        const sentences = cleanedText.match(/[^。！？!?；;]+[。！？!?；;]?/g) || [cleanedText];
-        let idx = 0;
-        webSpeechActive = true;
-
-        const speakSentence = () => {
-          if (idx >= sentences.length) {
-            setIsSynthesizing(false);
-            setAvatarState("idle");
-            try {
-              const { Live2dManager } = require("@/lib/live2d/live2dManager");
-              Live2dManager.getInstance().setSpeaking(false);
-            } catch (e) {}
-            return;
-          }
-          const utter = new SpeechSynthesisUtterance(sentences[idx]);
-          utter.lang = "zh-CN";
-
-          const voiceObj = getVoiceForOption(currentOpt);
-          if (voiceObj) {
-            utter.voice = voiceObj;
-          }
-
-          utter.rate = (avatarConfig?.speechRate || Math.round(currentOpt.rate * 100)) / 100;
-          utter.pitch = currentOpt.pitch;
-          utter.volume = 1.0;
-
-          utter.onstart = () => {
-            setIsSynthesizing(false);
-            setAvatarState("speaking");
-            try {
-              const { Live2dManager } = require("@/lib/live2d/live2dManager");
-              Live2dManager.getInstance().setSpeaking(true);
-              Live2dManager.getInstance().triggerSpeakMotion();
-            } catch (e) {}
-          };
-          utter.onend = () => {
-            idx++;
-            speakSentence();
-          };
-          utter.onerror = () => {
-            idx++;
-            speakSentence();
-          };
-
-          window.speechSynthesis.speak(utter);
-        };
-
-        speakSentence();
-      } catch (err) {
-        webSpeechActive = false;
-      }
-    }
-
-    // Secondary / High-fidelity Server Audio fallback
-    if (!webSpeechActive) {
-      try {
-        const payload = {
+    // 主链路：SophNet CosyVoice-v2，按当前选中的音色合成，切换后立即生效
+    try {
+      const res = await request("/api/qa/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           text: cleanedText.slice(0, 400),
+          voice: currentOpt.voiceId,
           voiceStyle: currentOpt.gender === "female" ? "warm" : "professional",
           speechRate: avatarConfig?.speechRate || 100,
           pitch: avatarConfig?.pitch || 100,
           ttsConfig: avatarConfig?.settings?.tts,
-        };
+        }),
+      });
 
-        const res = await request("/api/qa/tts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+      if (!res.ok) throw new Error(`TTS request failed: ${res.status}`);
 
-        if (!res.ok) throw new Error("TTS generation failed");
+      // 服务端最终兜底返回 1 秒 WAV 提示音，视为失败并改用浏览器语音，避免"切换无声"
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("wav")) throw new Error("TTS returned fallback wav");
 
-        const isLive2D = avatarConfig?.avatarStyle?.startsWith("live2d_");
-        const blob = await res.blob();
+      const blob = await res.blob();
+      if (blob.size < 1000) throw new Error("TTS returned empty audio");
 
-        if (isLive2D) {
-          const arrayBuffer = await blob.arrayBuffer();
-          const { Live2dManager } = require("@/lib/live2d/live2dManager");
-          Live2dManager.getInstance().onAudioStarted = () => {
-            setAvatarState("speaking");
-            Live2dManager.getInstance().setSpeaking(true);
-            Live2dManager.getInstance().triggerSpeakMotion();
-          };
-          Live2dManager.getInstance().onAudioEnded = () => {
-            setAvatarState("idle");
-            Live2dManager.getInstance().setSpeaking(false);
-          };
-          Live2dManager.getInstance().pushAudioQueue(arrayBuffer);
-        } else {
-          const url = URL.createObjectURL(blob);
-          const audio = new Audio(url);
-          audio.volume = 1.0;
-          audioRef.current = audio;
-          audio.onplay = () => {
-            setAvatarState("speaking");
-            try {
-              const { Live2dManager } = require("@/lib/live2d/live2dManager");
-              Live2dManager.getInstance().setSpeaking(true);
-              Live2dManager.getInstance().triggerSpeakMotion();
-            } catch (e) {}
-          };
-          audio.onended = () => {
-            setAvatarState("idle");
-            try {
-              const { Live2dManager } = require("@/lib/live2d/live2dManager");
-              Live2dManager.getInstance().setSpeaking(false);
-            } catch (e) {}
-            URL.revokeObjectURL(url);
-          };
-          audio.onerror = () => {
-            setAvatarState("idle");
-            try {
-              const { Live2dManager } = require("@/lib/live2d/live2dManager");
-              Live2dManager.getInstance().setSpeaking(false);
-            } catch (e) {}
-            URL.revokeObjectURL(url);
-          };
-          await audio.play();
-        }
-      } catch (err) {
-        console.error("Server TTS playback error:", err);
-        setAvatarState("idle");
-        try {
-          const { Live2dManager } = require("@/lib/live2d/live2dManager");
-          Live2dManager.getInstance().setSpeaking(false);
-        } catch (e) {}
-      }
+      await playServerAudio(blob);
+      return;
+    } catch (err) {
+      console.warn("SophNet TTS unavailable, falling back to Web Speech:", err);
+      speakWithWebSpeech(cleanedText, currentOpt);
     }
   };
 

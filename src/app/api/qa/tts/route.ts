@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { synthesizeSpeech } from "@/lib/api/xfyun-tts";
 import { synthesizeSophNetSpeech } from "@/lib/sophnet/tts";
+import { isSophNetVoiceId } from "@/lib/voice/presets";
 
 /** speechRate/pitch 前端以 100 为基准，换算为 cosyvoice-v2 的 0.5~2 倍率 */
 function toRate(value: number | undefined, fallback: number): number {
@@ -43,14 +44,16 @@ function createFallbackWavBuffer(): Buffer {
   return buffer;
 }
 
-async function processTts(text: string, options: { voiceStyle?: string; speechRate?: number; pitch?: number; ttsConfig?: any }) {
-  const { voiceStyle, speechRate, pitch, ttsConfig } = options;
+async function processTts(text: string, options: { voice?: string; voiceStyle?: string; speechRate?: number; pitch?: number; ttsConfig?: any }) {
+  const { voice, voiceStyle, speechRate, pitch, ttsConfig } = options;
 
   // 1. SophNet CosyVoice-v2（AI 数字人导游主音色）
   if (process.env.SOPHNET_API_KEY) {
     try {
       const audioBuffer = await synthesizeSophNetSpeech({
         text: text.slice(0, 500),
+        // 仅接受预设白名单音色，未命中时使用服务端默认音色
+        voice: isSophNetVoiceId(voice) ? voice : undefined,
         speechRate: toRate(speechRate, 1),
         pitchRate: toRate(pitch, 1),
       });
@@ -162,11 +165,11 @@ async function processTts(text: string, options: { voiceStyle?: string; speechRa
 
 export async function POST(request: NextRequest) {
   try {
-    const { text, voiceStyle, speechRate, pitch, ttsConfig } = await request.json();
+    const { text, voice, voiceStyle, speechRate, pitch, ttsConfig } = await request.json();
     if (!text) {
       return NextResponse.json({ error: "Text is required" }, { status: 400 });
     }
-    return await processTts(text, { voiceStyle, speechRate, pitch, ttsConfig });
+    return await processTts(text, { voice, voiceStyle, speechRate, pitch, ttsConfig });
   } catch (error: any) {
     console.error("[TTS Route POST Error]", error);
     const wavBuffer = createFallbackWavBuffer();
@@ -178,11 +181,12 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const text = searchParams.get("text") || "欢迎使用AI导游小玉语音播报功能";
+    const voice = searchParams.get("voice") || undefined;
     const voiceStyle = searchParams.get("voiceStyle") || "warm";
     const speechRate = searchParams.get("speechRate") ? parseInt(searchParams.get("speechRate")!) : 100;
     const pitch = searchParams.get("pitch") ? parseInt(searchParams.get("pitch")!) : 100;
 
-    return await processTts(text, { voiceStyle, speechRate, pitch });
+    return await processTts(text, { voice, voiceStyle, speechRate, pitch });
   } catch (error: any) {
     console.error("[TTS Route GET Error]", error);
     const wavBuffer = createFallbackWavBuffer();
