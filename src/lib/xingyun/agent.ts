@@ -3,16 +3,24 @@
 import type { AgentConversationState, AgentState } from "@xmov/avatar/agent";
 
 /**
- * 魔珐星云具身智能体「诗仙」运行管理器。
+ * 魔珐星云具身智能体运行管理器（支持「诗仙」与「小美」两个独立驱动应用）。
  *
  * - 只在浏览器执行：SDK 依赖 WebGL2 / WebAudio / WebSocket；
  * - App ID / App Secret 由服务端 `/api/xingyun/config` 同源下发，不写入前端产物；
- * - 单页仅维持一个实例，页面/组件卸载时销毁；
+ * - 单页同一时刻只维持一个实例，页面/组件卸载时销毁，切换形象时按 profile 重建；
  * - 运行态挂在 globalThis 上，确保「渲染组件」与「对话链路」跨 chunk 共享同一实例。
  */
 
 const DEFAULT_GATEWAY = "https://nebula-agent.xingyun3d.com/user/v1/ttsa_v2/session";
 const INIT_TIMEOUT_MS = 60000;
+
+/** 星云驱动应用档案：shixian=诗仙，xiaomei=小美 */
+export type XingyunAgentProfile = "shixian" | "xiaomei";
+
+const PROFILE_LABEL: Record<XingyunAgentProfile, string> = {
+  shixian: "诗仙",
+  xiaomei: "小美",
+};
 
 interface AgentLike {
   init(params?: { onDownloadProgress?: (progress: number) => void }): Promise<void>;
@@ -27,6 +35,7 @@ interface AgentLike {
 
 interface XingyunStore {
   agent: AgentLike | null;
+  profile: XingyunAgentProfile | null;
   mountingToken: number;
   conversationListeners: Set<(state: AgentConversationState) => void>;
 }
@@ -43,6 +52,7 @@ function getStore(): XingyunStore {
   if (!scope.__XINGYUN_STORE__) {
     scope.__XINGYUN_STORE__ = {
       agent: null,
+      profile: null,
       mountingToken: 0,
       conversationListeners: new Set(),
     };
@@ -61,10 +71,15 @@ function emitConversation(state: AgentConversationState) {
   });
 }
 
-async function loadCredentials(): Promise<{ appId: string; appSecret: string; gatewayServer: string }> {
-  const res = await fetch("/api/xingyun/config", { cache: "no-store" });
+async function loadCredentials(profile: XingyunAgentProfile): Promise<{ appId: string; appSecret: string; gatewayServer: string }> {
+  const query = profile === "xiaomei" ? "?profile=xiaomei" : "";
+  const res = await fetch(`/api/xingyun/config${query}`, { cache: "no-store" });
   if (!res.ok) {
-    throw new Error("魔珐星云密钥未配置，请检查 .env 中的 XINGYUN_APP_ID / XINGYUN_APP_SECRET");
+    throw new Error(
+      profile === "xiaomei"
+        ? "小美密钥未配置，请检查 .env 中的 XINGYUN_XIAOMEI_APP_ID / XINGYUN_XIAOMEI_APP_SECRET"
+        : "魔珐星云密钥未配置，请检查 .env 中的 XINGYUN_APP_ID / XINGYUN_APP_SECRET",
+    );
   }
   const data = await res.json();
   if (!data?.appId || !data?.appSecret) {
@@ -87,13 +102,19 @@ function withTimeout<T>(task: Promise<T>, ms: number, message: string): Promise<
   });
 }
 
-/** 在指定容器内挂载（或复用）诗仙数字人实例 */
-export async function mountXingyunAgent(container: HTMLElement, handlers: XingyunMountHandlers = {}): Promise<void> {
+/** 在指定容器内挂载（或复用）星云数字人实例；默认 profile 为「诗仙」，保持既有行为 */
+export async function mountXingyunAgent(
+  container: HTMLElement,
+  handlers: XingyunMountHandlers = {},
+  options: { profile?: XingyunAgentProfile } = {},
+): Promise<void> {
+  const profile = options.profile ?? "shixian";
+  const label = PROFILE_LABEL[profile];
   const store = getStore();
   const token = ++store.mountingToken;
   await destroyXingyunAgent();
 
-  const { appId, appSecret, gatewayServer } = await loadCredentials();
+  const { appId, appSecret, gatewayServer } = await loadCredentials(profile);
   if (token !== store.mountingToken) return;
 
   const mod: any = await import("@xmov/avatar/agent");
@@ -124,6 +145,7 @@ export async function mountXingyunAgent(container: HTMLElement, handlers: Xingyu
   });
 
   store.agent = agent;
+  store.profile = profile;
 
   try {
     await withTimeout(
@@ -133,41 +155,49 @@ export async function mountXingyunAgent(container: HTMLElement, handlers: Xingyu
         },
       }),
       INIT_TIMEOUT_MS,
-      "诗仙资源加载超时，请检查网络后重试",
+      `${label}资源加载超时，请检查网络后重试`,
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "诗仙初始化失败";
+    const message = error instanceof Error ? error.message : `${label}初始化失败`;
     handlers.onError?.(message);
     await agent.destroy("init_failed").catch(() => undefined);
-    if (store.agent === agent) store.agent = null;
+    if (store.agent === agent) {
+      store.agent = null;
+      store.profile = null;
+    }
     throw error;
   }
 
   if (token !== store.mountingToken) {
     await agent.destroy("superseded").catch(() => undefined);
-    if (store.agent === agent) store.agent = null;
+    if (store.agent === agent) {
+      store.agent = null;
+      store.profile = null;
+    }
     return;
   }
 
   handlers.onProgress?.(100);
 }
 
-function runnableAgent(): AgentLike | null {
-  const agent = getStore().agent;
+function runnableAgent(expectedProfile?: XingyunAgentProfile): AgentLike | null {
+  const store = getStore();
+  const agent = store.agent;
   if (!agent) return null;
+  if (expectedProfile && store.profile !== expectedProfile) return null;
   const state = agent.getAgentState();
   // 官方文档：init 完成即 running；部分版本会短暂停留在 ready，这里一并视为可用
   return state === "running" || state === "ready" ? agent : null;
 }
 
-export function isXingyunAgentReady(): boolean {
-  return !!runnableAgent();
+export function isXingyunAgentReady(profile?: XingyunAgentProfile): boolean {
+  return !!runnableAgent(profile);
 }
 
-/** 用诗仙自己的语音与动作播报文本；返回 false 时应回退到原有 TTS 链路 */
-export function speakWithXingyun(text: string): boolean {
+/** 用数字人自己的语音与动作播报文本；返回 false 时应回退到原有 TTS 链路 */
+export function speakWithXingyun(text: string, profile?: XingyunAgentProfile): boolean {
   const content = text.trim();
-  const agent = runnableAgent();
+  const agent = runnableAgent(profile);
   if (!content || !agent) return false;
   try {
     agent.speak(content, true, true);
@@ -177,9 +207,9 @@ export function speakWithXingyun(text: string): boolean {
   }
 }
 
-/** 打断诗仙当前播报（与原有停止播放逻辑串联） */
-export function interruptXingyun(): void {
-  const agent = runnableAgent();
+/** 打断当前播报（与原有停止播放逻辑串联） */
+export function interruptXingyun(profile?: XingyunAgentProfile): void {
+  const agent = runnableAgent(profile);
   if (!agent) return;
   try {
     agent.interrupt();
@@ -187,11 +217,35 @@ export function interruptXingyun(): void {
 }
 
 /** 用星云内置大脑进行文本对话（保留其原生能力，供后续独立语音交互扩展） */
-export async function askXingyun(text: string): Promise<boolean> {
-  const agent = runnableAgent();
+export async function askXingyun(text: string, profile?: XingyunAgentProfile): Promise<boolean> {
+  const agent = runnableAgent(profile);
   if (!text.trim() || !agent) return false;
   try {
     await agent.ask(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** 开启星云内置语音识别（需用户手势触发） */
+export async function startXingyunASR(profile?: XingyunAgentProfile): Promise<boolean> {
+  const agent = runnableAgent(profile);
+  if (!agent) return false;
+  try {
+    await agent.startASR();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** 停止星云内置语音识别 */
+export async function stopXingyunASR(profile?: XingyunAgentProfile): Promise<boolean> {
+  const agent = runnableAgent(profile);
+  if (!agent) return false;
+  try {
+    await agent.stopASR();
     return true;
   } catch {
     return false;
@@ -202,6 +256,7 @@ export async function destroyXingyunAgent(): Promise<void> {
   const store = getStore();
   const agent = store.agent;
   store.agent = null;
+  store.profile = null;
   if (!agent) return;
   try {
     await agent.destroy("component_unmount");

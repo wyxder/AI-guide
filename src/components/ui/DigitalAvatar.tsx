@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useId, memo } from "react";
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import { isXingyunAvatarStyle, XINGYUN_AVATAR_IMAGE } from "@/lib/xingyun/preset";
+import { isXiaomeiAvatarStyle, XIAOMEI_AVATAR_IMAGE } from "@/lib/xiaomei/preset";
 
 const Live2DViewer = dynamic(() => import("./Live2DViewer"), { ssr: false });
 const XingyunAvatar = dynamic(
@@ -502,7 +503,10 @@ function DigitalAvatarComponent({ state, size = "md", audioElement, avatarStyle 
   };
 
   const isLive2D = !!avatarStyle && avatarStyle.startsWith("live2d_");
-  const isXingyun = isXingyunAvatarStyle(avatarStyle);
+  const isXiaomei = isXiaomeiAvatarStyle(avatarStyle);
+  const isXingyun = isXingyunAvatarStyle(avatarStyle) || isXiaomei;
+  const starcloudImage = isXiaomei ? XIAOMEI_AVATAR_IMAGE : XINGYUN_AVATAR_IMAGE;
+  const starcloudAlt = isXiaomei ? "小美数字人" : "诗仙数字人";
   const live2DPortrait = isLive2D
     ? `/sentio/characters/free/${avatarStyle.replace("live2d_", "")}/thumb.webp`
     : "";
@@ -536,7 +540,7 @@ function DigitalAvatarComponent({ state, size = "md", audioElement, avatarStyle 
           animate={state === "speaking" ? { y: [0, -3, 0] } : { y: 0 }}
           transition={{ duration: 1.3, repeat: state === "speaking" ? Infinity : 0, ease: "easeInOut" }}>
           {isXingyun ? (
-            <XingyunAvatar height={avatarHeight} />
+            <XingyunAvatar height={avatarHeight} profile={isXiaomei ? "xiaomei" : "shixian"} />
           ) : isLive2D ? (
             <Live2DViewer avatarStyle={avatarStyle} />
           ) : isUrl ? (
@@ -576,7 +580,7 @@ function DigitalAvatarComponent({ state, size = "md", audioElement, avatarStyle 
       <div className="relative w-full h-full rounded-full overflow-hidden"
         style={{ border: `2px solid ${p.ring}`, boxShadow: `0 0 16px ${p.aura}` }}>
         {isXingyun ? (
-          <img src={XINGYUN_AVATAR_IMAGE} alt="诗仙数字人" className="w-full h-full object-cover" decoding="async" />
+          <img src={starcloudImage} alt={starcloudAlt} className="w-full h-full object-cover" decoding="async" />
         ) : isLive2D ? (
           <img src={live2DPortrait} alt="Digital Avatar" className="w-full h-full object-cover" decoding="async" />
         ) : isUrl ? (

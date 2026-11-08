@@ -3,6 +3,7 @@ import { db } from "@/lib/db/client";
 import { avatarConfigs } from "@/lib/db/schema/admin";
 import { eq, desc } from "drizzle-orm";
 import { XINGYUN_AVATAR_PRESET } from "@/lib/xingyun/preset";
+import { XIAOMEI_AVATAR_PRESET } from "@/lib/xiaomei/preset";
 
 // Live2D cartoon avatar presets
 const DEFAULT_PRESETS = [
@@ -140,13 +141,17 @@ const DEFAULT_PRESETS = [
   }
 ];
 
-// 「诗仙」魔珐星云具身智能体排在首位；原有 Live2D 形象与能力完全保留
-const ALL_PRESETS = [XINGYUN_AVATAR_PRESET, ...DEFAULT_PRESETS];
+// 「诗仙」「小美」魔珐星云具身智能体排在首位；原有 Live2D 形象与能力完全保留
+const STARCLOUD_PRESETS = [XINGYUN_AVATAR_PRESET, XIAOMEI_AVATAR_PRESET];
+const ALL_PRESETS = [...STARCLOUD_PRESETS, ...DEFAULT_PRESETS];
 
-/** 返回列表时始终把「诗仙」置顶，原有形象顺序保持不变 */
+/** 返回列表时始终把「诗仙」「小美」置顶，原有形象顺序保持不变 */
 function withXingyunFirst<T extends { avatarStyle: string }>(list: T[]): T[] {
-  const first = list.filter((item) => item.avatarStyle === XINGYUN_AVATAR_PRESET.avatarStyle);
-  const rest = list.filter((item) => item.avatarStyle !== XINGYUN_AVATAR_PRESET.avatarStyle);
+  const first: T[] = [];
+  STARCLOUD_PRESETS.forEach((preset) => {
+    first.push(...list.filter((item) => item.avatarStyle === preset.avatarStyle));
+  });
+  const rest = list.filter((item) => !STARCLOUD_PRESETS.some((preset) => preset.avatarStyle === item.avatarStyle));
   return [...first, ...rest];
 }
 
@@ -172,9 +177,14 @@ export async function GET() {
     // 旧的真人照片形象已下线，命中则重建为纯 Live2D 预设
     const hasRemovedPresets = configs.some(c => REMOVED_PRESET_NAMES.includes(c.name));
     const hasXingyunPreset = configs.some(c => c.avatarStyle === XINGYUN_AVATAR_PRESET.avatarStyle);
+    const hasXiaomeiPreset = configs.some(c => c.avatarStyle === XIAOMEI_AVATAR_PRESET.avatarStyle);
+    // 小美缩略图等预设信息变更后，旧数据需按最新预设重建
+    const hasStaleXiaomei = configs.some(
+      c => c.avatarStyle === XIAOMEI_AVATAR_PRESET.avatarStyle && c.imageUrl !== XIAOMEI_AVATAR_PRESET.imageUrl,
+    );
     
     // Seed database if configurations are incomplete, outdated, using URL avatarStyle, or default is not Hiyori
-    if (configs.length < ALL_PRESETS.length || !hasHiyoriDefault || hasRemovedPresets || !hasXingyunPreset || (configs[0] && configs[0].avatarStyle.startsWith("http"))) {
+    if (configs.length < ALL_PRESETS.length || !hasHiyoriDefault || hasRemovedPresets || !hasXingyunPreset || !hasXiaomeiPreset || hasStaleXiaomei || (configs[0] && configs[0].avatarStyle.startsWith("http"))) {
       await db.delete(avatarConfigs);
       await db.insert(avatarConfigs).values(ALL_PRESETS);
       configs = await db.select().from(avatarConfigs).where(eq(avatarConfigs.isActive, true)).orderBy(desc(avatarConfigs.createdAt));

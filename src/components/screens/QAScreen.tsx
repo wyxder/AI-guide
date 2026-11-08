@@ -7,10 +7,11 @@ import {
   Image as ImageIcon, User, Plus, Check
 } from "lucide-react";
 import { request } from "@/lib/api/request";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { SatisfactionModal } from "@/components/ui/SatisfactionModal";
 import { DigitalAvatar, type AvatarState } from "@/components/ui/DigitalAvatar";
 import { AvatarSelectorModal } from "@/components/ui/AvatarSelectorModal";
+import { CameraRecognize } from "@/components/ui/CameraRecognize";
 import { toast } from "sonner";
 import {
   interruptXingyun,
@@ -18,6 +19,8 @@ import {
   subscribeXingyunConversation,
 } from "@/lib/xingyun/agent";
 import { isXingyunAvatarStyle } from "@/lib/xingyun/preset";
+import { isXiaomeiAvatarStyle } from "@/lib/xiaomei/preset";
+import { speakWithXiaomei } from "@/lib/xiaomei/agent";
 import {
   DEFAULT_VOICE_ID,
   resolveVoiceOption,
@@ -140,7 +143,6 @@ function initMsg(spotName?: string | null): Message {
 
 export function QAScreen() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const spotName = searchParams.get("name");
 
   const [messages, setMessages] = useState<Message[]>([initMsg(spotName)]);
@@ -267,6 +269,10 @@ export function QAScreen() {
   const [showPersonaMenu, setShowPersonaMenu] = useState(false);
   const [allAvatars, setAllAvatars] = useState<any[]>([]);
   const [customAvatars, setCustomAvatars] = useState<any[]>([]);
+
+  // 魔珐星云形象（诗仙 / 小美）：渲染、播报与状态同步均走星云 SDK
+  const isXiaomeiAvatar = isXiaomeiAvatarStyle(selectedStyle);
+  const isStarcloudAvatar = isXingyunAvatarStyle(selectedStyle) || isXiaomeiAvatar;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const avatarUploadRef = useRef<HTMLInputElement>(null);
@@ -410,9 +416,9 @@ export function QAScreen() {
       .catch((e) => console.error("Failed to load active avatar config", e));
   }, []);
 
-  // 「诗仙」播报状态同步：星云对话/播报状态驱动原有头像状态机
+  // 「诗仙 / 小美」播报状态同步：星云对话/播报状态驱动原有头像状态机
   useEffect(() => {
-    if (!isXingyunAvatarStyle(selectedStyle)) return;
+    if (!isStarcloudAvatar) return;
     return subscribeXingyunConversation((state) => {
       if (state === "asking") {
         setAvatarState("thinking");
@@ -422,7 +428,7 @@ export function QAScreen() {
         setAvatarState("idle");
       }
     });
-  }, [selectedStyle]);
+  }, [isStarcloudAvatar]);
 
   const [avatarWidth, setAvatarWidth] = useState(450); // Default to a wider layout (450px)
   const panelRef = useRef<HTMLDivElement>(null);
@@ -675,11 +681,14 @@ export function QAScreen() {
     const cleanedText = text.replace(/\[情感[:：][^\]]+\]/g, "").trim();
     if (!cleanedText) return;
 
-    // 诗仙（魔珐星云具身智能体）：优先使用星云内置语音与 3D 动作播报，未就绪时回退原有 TTS 链路
-    if (isXingyunAvatarStyle(selectedStyle) && speakWithXingyun(cleanedText)) {
-      setIsSynthesizing(false);
-      setAvatarState("speaking");
-      return;
+    // 诗仙 / 小美（魔珐星云具身智能体）：优先使用星云内置语音与 3D 动作播报，未就绪时回退原有 TTS 链路
+    if (isStarcloudAvatar) {
+      const spoken = isXiaomeiAvatar ? speakWithXiaomei(cleanedText) : speakWithXingyun(cleanedText);
+      if (spoken) {
+        setIsSynthesizing(false);
+        setAvatarState("speaking");
+        return;
+      }
     }
 
     setIsSynthesizing(true);
@@ -1071,7 +1080,7 @@ export function QAScreen() {
       {renderVoiceStatus(dark)}
       <div className={`flex items-center gap-2`}>
       {/* Camera */}
-      <motion.button type="button" whileTap={{ scale: 0.84 }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push("/vr-recognize?action=camera"); }}
+      <motion.button type="button" whileTap={{ scale: 0.84 }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowCamera(true); }}
         className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-md transition-all hover:brightness-105"
         style={{
           background: "linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)",
@@ -1379,7 +1388,7 @@ export function QAScreen() {
           {/* Input row: [Camera] [Mic] [Input pill] [Send/Camera] */}
           <div className="flex items-center gap-2.5">
             {/* Camera button — left of mic */}
-            <motion.button type="button" whileTap={{ scale: 0.88 }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push("/vr-recognize?action=camera"); }}
+            <motion.button type="button" whileTap={{ scale: 0.88 }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowCamera(true); }}
               className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg transition-all hover:brightness-105"
               style={{
                 background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",
@@ -1650,6 +1659,18 @@ export function QAScreen() {
       {/* ── Modals ── */}
       <input type="file" ref={fileInputRef} onChange={handleBgUpload} accept="image/*" className="hidden" />
       <input type="file" ref={avatarUploadRef} onChange={handleCustomAvatarUpload} accept="image/*,video/*" className="hidden" />
+
+      {/* 应用内拍照识别（语音输入按钮旁的相机图标直接唤起） */}
+      <AnimatePresence>
+        {showCamera && (
+          <CameraRecognize
+            currentSpot={spotName || undefined}
+            autoStartCamera
+            onClose={() => setShowCamera(false)}
+            onRecognized={handleCameraRecognized}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Voice Selection Dropdown Menu - Centered Screen Modal */}
       <AnimatePresence>

@@ -2,23 +2,31 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Loader2, RefreshCw, Sparkles } from "lucide-react";
-import { destroyXingyunAgent, mountXingyunAgent } from "@/lib/xingyun/agent";
+import { destroyXingyunAgent, mountXingyunAgent, type XingyunAgentProfile } from "@/lib/xingyun/agent";
 
 interface Props {
   height?: number;
+  /** 星云驱动应用档案：shixian=诗仙（默认），xiaomei=小美 */
+  profile?: XingyunAgentProfile;
 }
 
+const PROFILE_TEXT: Record<XingyunAgentProfile, { name: string; loading: string; failed: string }> = {
+  shixian: { name: "诗仙", loading: "正在唤醒诗仙…", failed: "诗仙加载失败" },
+  xiaomei: { name: "小美", loading: "正在唤醒小美…", failed: "小美加载失败" },
+};
+
 /**
- * 魔珐星云「诗仙」3D 具身智能体渲染容器。
+ * 魔珐星云具身智能体 3D 渲染容器（诗仙 / 小美共用）。
  * 容器必须有明确宽高，否则 SDK 画布会折叠为零尺寸。
  */
-export function XingyunAvatar({ height = 500 }: Props) {
+export function XingyunAvatar({ height = 500, profile = "shixian" }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(true);
   const [progress, setProgress] = useState(0);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const text = PROFILE_TEXT[profile];
 
   useEffect(() => {
     mountedRef.current = true;
@@ -36,17 +44,17 @@ export function XingyunAvatar({ height = 500 }: Props) {
         if (state === "running" || state === "ready") setReady(true);
       },
       onError: (message) => { if (mountedRef.current) setError(message); },
-    })
+    }, { profile })
       .then(() => { if (mountedRef.current) setReady(true); })
       .catch((err) => {
-        if (mountedRef.current) setError(err instanceof Error ? err.message : "诗仙加载失败");
+        if (mountedRef.current) setError(err instanceof Error ? err.message : text.failed);
       });
 
     return () => {
       mountedRef.current = false;
       void destroyXingyunAgent();
     };
-  }, [attempt]);
+  }, [attempt, profile, text.failed]);
 
   return (
     <div className="relative w-full h-full overflow-hidden" style={{ height }}>
@@ -55,7 +63,7 @@ export function XingyunAvatar({ height = 500 }: Props) {
       {!ready && !error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-[#0E1512] text-white">
           <Loader2 className="w-5 h-5 animate-spin text-[#D2A053]" />
-          <span className="text-[11px] text-white/70">正在唤醒诗仙…{progress > 0 ? ` ${progress}%` : ""}</span>
+          <span className="text-[11px] text-white/70">{text.loading}{progress > 0 ? ` ${progress}%` : ""}</span>
           <div className="w-28 h-[3px] rounded-full bg-white/10 overflow-hidden">
             <div className="h-full bg-[#D2A053] transition-all duration-300" style={{ width: `${Math.max(progress, 6)}%` }} />
           </div>
@@ -78,4 +86,11 @@ export function XingyunAvatar({ height = 500 }: Props) {
       )}
     </div>
   );
+}
+
+/**
+ * 「小美」渲染容器：固定使用小美 profile，保持与「诗仙」一致的加载与重试体验。
+ */
+export function XiaomeiAvatar({ height = 500 }: { height?: number }) {
+  return <XingyunAvatar height={height} profile="xiaomei" />;
 }

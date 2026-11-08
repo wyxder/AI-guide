@@ -376,84 +376,83 @@ export function RoutesScreen() {
 
   // Voice recording states & refs
   const [recording, setRecording] = useState(false);
+  const [voiceBusy, setVoiceBusy] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const recognitionRef = useRef<any>(null);
 
   const handleSpeechInputToggle = async () => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (voiceBusy) return;
 
+    // 录音中再次点击：结束录音，由 onstop 上传识别
     if (recording) {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-        setRecording(false);
-      } else if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stop();
-        setRecording(false);
-      }
-    } else {
-      if (SR) {
-        const rec = new SR();
-        rec.lang = "zh-CN"; rec.continuous = false; rec.interimResults = false;
-        rec.onresult = (e: any) => {
-          const txt = e.results[0][0].transcript;
-          setChatInput(txt);
-        };
-        rec.onend = () => setRecording(false);
-        rec.onerror = () => setRecording(false);
-        rec.start();
-        recognitionRef.current = rec;
-        mediaRecorderRef.current = null;
-        setRecording(true);
-      } else {
-        try {
-          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            setChatInput("（浏览器不支持录音）");
-            return;
-          }
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          const mediaRecorder = new MediaRecorder(stream);
-          mediaRecorderRef.current = mediaRecorder;
-          recognitionRef.current = null;
-          audioChunksRef.current = [];
+      try {
+        mediaRecorderRef.current?.stop();
+      } catch {}
+      setRecording(false);
+      return;
+    }
 
-          mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-              audioChunksRef.current.push(event.data);
-            }
-          };
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast.error("当前环境不支持麦克风录音");
+      return;
+    }
 
-          mediaRecorder.onstop = async () => {
-            stream.getTracks().forEach((track) => track.stop());
-            const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-            const formData = new FormData();
-            formData.append("file", audioBlob, "audio.webm");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const preferredType = MediaRecorder.isTypeSupported("audio/webm")
+        ? "audio/webm"
+        : MediaRecorder.isTypeSupported("audio/mp4")
+          ? "audio/mp4"
+          : "";
+      const mediaRecorder = new MediaRecorder(stream, preferredType ? { mimeType: preferredType } : undefined);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
 
-            setChatInput("正在识别语音...");
-            try {
-              const res = await request("/api/qa/stt", {
-                method: "POST",
-                body: formData,
-              });
-              const data = await res.json();
-              if (data.text) {
-                setChatInput(data.text);
-              } else {
-                setChatInput("");
-              }
-            } catch (err) {
-              console.error("Whisper STT error:", err);
-              setChatInput("（语音识别失败）");
-            }
-          };
-
-          mediaRecorder.start();
-          setRecording(true);
-        } catch (err) {
-          console.error("Mic access denied:", err);
-          setChatInput("（无法获取麦克风权限）");
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
         }
-      }
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach((track) => track.stop());
+        const blobType = preferredType || "audio/webm";
+        const audioBlob = new Blob(audioChunksRef.current, { type: blobType });
+        if (audioBlob.size === 0) return;
+
+        const formData = new FormData();
+        formData.append("file", audioBlob, blobType.includes("mp4") ? "voice.m4a" : "voice.webm");
+
+        setVoiceBusy(true);
+        const toastId = toast.loading("正在识别语音（TeleSpeechASR）…");
+        try {
+          // SiliconFlow TeleAI/TeleSpeechASR 语音识别
+          const res = await request("/api/siliconflow/asr", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await res.json();
+          const text = (data?.text || "").trim();
+          if (text) {
+            toast.success("识别完成，正在发送给 AI 助手…", { id: toastId });
+            await handleSendChatMessage(text);
+          } else {
+            toast.error("未识别到清晰语音，请重试", { id: toastId });
+          }
+        } catch (err) {
+          console.error("SiliconFlow ASR error:", err);
+          toast.error("语音识别失败，请重试", { id: toastId });
+        } finally {
+          setVoiceBusy(false);
+        }
+      };
+
+      mediaRecorder.start();
+      setRecording(true);
+      toast.success("正在聆听，再次点击麦克风结束并发送");
+    } catch (err) {
+      console.error("Mic access denied:", err);
+      toast.error("无法获取麦克风权限，请检查系统设置");
     }
   };
 
@@ -1102,12 +1101,14 @@ export function RoutesScreen() {
     }, 1800);
   };
 
-  const handleSendChatMessage = async () => {
-    if (!chatInput.trim() && attachedMedia.length === 0) return;
-    let content = chatInput.trim();
+  const handleSendChatMessage = async (overrideText?: string) => {
+    // 语音识别结果通过参数直接传入，避免读取到尚未更新的 state
+    const baseText = typeof overrideText === "string" ? overrideText : chatInput;
+    if (!baseText.trim() && attachedMedia.length === 0) return;
+    let content = baseText.trim();
     if (attachedMedia.length > 0) {
       const mediaText = attachedMedia.map(m => m.type === 'image' ? `![图片](${m.url})` : `🎬 [视频: ${m.name}]`).join('\n');
-      content = mediaText + (chatInput.trim() ? '\n\n' + chatInput.trim() : '');
+      content = mediaText + (baseText.trim() ? '\n\n' + baseText.trim() : '');
     }
     const userMsg = content;
     const updated = [...chatMessages, { role: "user" as const, content: userMsg }];
@@ -1588,12 +1589,23 @@ export function RoutesScreen() {
 
                   <button
                     onClick={handleSpeechInputToggle}
+                    disabled={voiceBusy}
                     className={`w-7 h-7 rounded-full flex items-center justify-center border transition-all ${
-                      recording ? "border-amber-500 bg-amber-50 text-amber-600 shadow" : "border-zinc-200 text-zinc-500 hover:bg-neutral-50"
+                      voiceBusy
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-600 shadow"
+                        : recording
+                          ? "border-amber-500 bg-amber-50 text-amber-600 shadow"
+                          : "border-zinc-200 text-zinc-500 hover:bg-neutral-50"
                     }`}
-                    title="语音提问"
+                    title={voiceBusy ? "正在识别..." : "语音提问"}
                   >
-                    {recording ? <Mic className="w-3.5 h-3.5 animate-bounce" /> : <Mic className="w-3.5 h-3.5" />}
+                    {voiceBusy ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : recording ? (
+                      <Mic className="w-3.5 h-3.5 animate-bounce" />
+                    ) : (
+                      <Mic className="w-3.5 h-3.5" />
+                    )}
                   </button>
 
                   <input
@@ -1601,12 +1613,12 @@ export function RoutesScreen() {
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSendChatMessage()}
-                    placeholder={recording ? "正在聆听..." : "向小慧提问..."}
+                    placeholder={voiceBusy ? "正在识别语音..." : recording ? "正在聆听..." : "向小慧提问..."}
                     className="flex-1 bg-neutral-50 border border-zinc-200/80 rounded-full px-3 py-2 text-xs outline-none focus:border-[#4F6F52] focus:bg-white transition-all text-[#2C3E35]"
                   />
 
                   <button
-                    onClick={handleSendChatMessage}
+                    onClick={() => handleSendChatMessage()}
                     className="w-7 h-7 rounded-full bg-[#4F6F52] text-white flex items-center justify-center hover:bg-[#3A5240] transition-colors shadow-md flex-shrink-0 active:scale-95"
                   >
                     <Send className="w-3 h-3 text-white" />
@@ -1681,12 +1693,23 @@ export function RoutesScreen() {
 
                 <button
                   onClick={handleSpeechInputToggle}
+                  disabled={voiceBusy}
                   className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all ${
-                    recording ? "border-amber-500 bg-amber-50 text-amber-600 shadow" : "border-zinc-200 text-zinc-500 hover:bg-neutral-50"
+                    voiceBusy
+                      ? "border-emerald-500 bg-emerald-50 text-emerald-600 shadow"
+                      : recording
+                        ? "border-amber-500 bg-amber-50 text-amber-600 shadow"
+                        : "border-zinc-200 text-zinc-500 hover:bg-neutral-50"
                   }`}
-                  title="语音提问"
+                  title={voiceBusy ? "正在识别..." : "语音提问"}
                 >
-                  {recording ? <Mic className="w-4 h-4 animate-bounce" /> : <Mic className="w-4 h-4" />}
+                  {voiceBusy ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : recording ? (
+                    <Mic className="w-4 h-4 animate-bounce" />
+                  ) : (
+                    <Mic className="w-4 h-4" />
+                  )}
                 </button>
 
                 <input
@@ -1694,12 +1717,12 @@ export function RoutesScreen() {
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSendChatMessage()}
-                  placeholder={recording ? "正在聆听..." : "向小慧提问..."}
+                  placeholder={voiceBusy ? "正在识别语音..." : recording ? "正在聆听..." : "向小慧提问..."}
                   className="flex-1 bg-neutral-50 border border-zinc-200/80 rounded-full px-4 py-2.5 text-xs outline-none focus:border-[#4F6F52] focus:bg-white transition-all text-[#2C3E35]"
                 />
 
                 <button
-                  onClick={handleSendChatMessage}
+                  onClick={() => handleSendChatMessage()}
                   className="w-8 h-8 rounded-full bg-[#4F6F52] text-white flex items-center justify-center hover:bg-[#3A5240] transition-colors shadow-md flex-shrink-0 active:scale-95"
                 >
                   <Send className="w-4 h-4 text-white" />

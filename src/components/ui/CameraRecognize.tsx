@@ -62,11 +62,13 @@ const PRESETS = [
 
 interface CameraRecognizeProps {
   currentSpot?: string;
+  /** 打开弹窗后立即唤起摄像头（用于 AI 导游输入栏旁的相机图标） */
+  autoStartCamera?: boolean;
   onClose: () => void;
   onRecognized?: (subject: string, story: string) => void;
 }
 
-export function CameraRecognize({ currentSpot, onClose, onRecognized }: CameraRecognizeProps) {
+export function CameraRecognize({ currentSpot, autoStartCamera = false, onClose, onRecognized }: CameraRecognizeProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -76,6 +78,7 @@ export function CameraRecognize({ currentSpot, onClose, onRecognized }: CameraRe
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
+  const [cameraLoading, setCameraLoading] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   
   const [scanning, setScanning] = useState(false);
@@ -134,6 +137,7 @@ export function CameraRecognize({ currentSpot, onClose, onRecognized }: CameraRe
 
   const startCamera = async () => {
     setCameraError(null);
+    setCameraLoading(true);
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
         setCameraError("当前浏览器不支持摄像头调用");
@@ -153,6 +157,8 @@ export function CameraRecognize({ currentSpot, onClose, onRecognized }: CameraRe
       });
     } catch {
       setCameraError("无法获取摄像头权限，请允许浏览器访问相机");
+    } finally {
+      setCameraLoading(false);
     }
   };
 
@@ -272,6 +278,14 @@ export function CameraRecognize({ currentSpot, onClose, onRecognized }: CameraRe
     setMounted(true);
     return () => setMounted(false);
   }, []);
+
+  // 从 AI 导游输入栏的相机图标进入时，直接唤起摄像头
+  useEffect(() => {
+    if (!mounted || !autoStartCamera) return;
+    const timer = window.setTimeout(() => { startCamera(); }, 0);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, autoStartCamera]);
 
   if (!mounted) return null;
 
@@ -399,10 +413,10 @@ export function CameraRecognize({ currentSpot, onClose, onRecognized }: CameraRe
                   >
                     {/* Camera icon - NO circle dot frame */}
                     <div className="text-[#D2A053] drop-shadow-[0_0_15px_rgba(210,160,83,0.6)] animate-pulse mb-1">
-                      <Camera className="w-12 h-12" />
+                      {cameraLoading ? <Loader2 className="w-12 h-12 animate-spin" /> : <Camera className="w-12 h-12" />}
                     </div>
                     <div>
-                      <h3 className="text-white font-bold text-sm tracking-wide">对准展品或文物拍摄</h3>
+                      <h3 className="text-white font-bold text-sm tracking-wide">{cameraLoading ? "正在打开摄像头…" : "对准展品或文物拍摄"}</h3>
                       <p className="text-xs text-[#8F9F8F] mt-1.5 leading-relaxed">
                         上传展品照片或在下方选择“珍玩预设”，小玉即刻为您开启3D拓扑与多模态深度文化解读。
                       </p>

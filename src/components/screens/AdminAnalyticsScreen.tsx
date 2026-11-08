@@ -10,6 +10,7 @@ import Link from "next/link";
 import { QRCodePanel } from "@/components/ui/QRCodePanel";
 import { DigitalAvatar, type AvatarState } from "@/components/ui/DigitalAvatar";
 import { XINGYUN_AVATAR_STYLE } from "@/lib/xingyun/preset";
+import { XIAOMEI_AVATAR_STYLE } from "@/lib/xiaomei/preset";
 
 const SPRING = { type: "spring" as const, stiffness: 280, damping: 35 };
 
@@ -35,6 +36,7 @@ const SPOT_NAMES: Record<number, string> = { 1: "揽月亭", 2: "翠玉湖", 3: 
 /* ── 数字人形象预设 ─────────────────────────────────────── */
 const AVATAR_PRESETS = [
   { style: XINGYUN_AVATAR_STYLE, name: "诗仙·李白", short: "诗仙", role: "POET IMMORTAL · 星云具身智能体" },
+  { style: XIAOMEI_AVATAR_STYLE, name: "小美", short: "小美", role: "XIAOMEI · 星云具身智能体" },
   { style: "live2d_Chitose", name: "Chitose", short: "Chitose", role: "LIVE2D · 千岁" },
   { style: "live2d_Hiyori", name: "Hiyori", short: "Hiyori", role: "LIVE2D · 日和" },
   { style: "live2d_Mao", name: "Mao", short: "Mao", role: "LIVE2D · 猫" },
