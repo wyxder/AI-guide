@@ -8,6 +8,12 @@ interface Props {
   height?: number;
   /** 星云驱动应用档案：shixian=诗仙（默认），xiaomei=小美 */
   profile?: XingyunAgentProfile;
+  /**
+   * 画面缩放系数（1 = 原始大小）。
+   * 星云控制台的「透明背景-半身」构图会把形象绘制得略大于容器，
+   * 适当小于 1 可让半身像完整落在容器内、不被裁切。
+   */
+  scale?: number;
 }
 
 const PROFILE_TEXT: Record<XingyunAgentProfile, { name: string; loading: string; failed: string }> = {
@@ -19,7 +25,7 @@ const PROFILE_TEXT: Record<XingyunAgentProfile, { name: string; loading: string;
  * 魔珐星云具身智能体 3D 渲染容器（诗仙 / 小美共用）。
  * 容器必须有明确宽高，否则 SDK 画布会折叠为零尺寸。
  */
-export function XingyunAvatar({ height = 500, profile = "shixian" }: Props) {
+export function XingyunAvatar({ height = 500, profile = "shixian", scale = 1 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(true);
   const [progress, setProgress] = useState(0);
@@ -58,7 +64,11 @@ export function XingyunAvatar({ height = 500, profile = "shixian" }: Props) {
 
   return (
     <div className="relative w-full h-full overflow-hidden" style={{ height }}>
-      <div ref={containerRef} className="w-full h-full" style={{ height }} />
+      <div
+        ref={containerRef}
+        className="w-full h-full"
+        style={{ height, transform: scale === 1 ? undefined : `scale(${scale})`, transformOrigin: "center bottom" }}
+      />
 
       {!ready && !error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-[#0E1512] text-white">
@@ -92,5 +102,5 @@ export function XingyunAvatar({ height = 500, profile = "shixian" }: Props) {
  * 「小美」渲染容器：固定使用小美 profile，保持与「诗仙」一致的加载与重试体验。
  */
 export function XiaomeiAvatar({ height = 500 }: { height?: number }) {
-  return <XingyunAvatar height={height} profile="xiaomei" />;
+  return <XingyunAvatar height={height} profile="xiaomei" scale={0.9} />;
 }
