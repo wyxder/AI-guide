@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
 import { avatarConfigs } from "@/lib/db/schema/admin";
 import { eq, desc } from "drizzle-orm";
+import { XINGYUN_AVATAR_PRESET } from "@/lib/xingyun/preset";
 
 // Live2D cartoon avatar presets
 const DEFAULT_PRESETS = [
@@ -139,6 +140,9 @@ const DEFAULT_PRESETS = [
   }
 ];
 
+// 追加「诗仙」魔珐星云具身智能体形象；原有 Live2D 形象与能力完全保留
+const ALL_PRESETS = [...DEFAULT_PRESETS, XINGYUN_AVATAR_PRESET];
+
 // 已下线的真人照片形象名称，用于清理历史数据
 const REMOVED_PRESET_NAMES = [
   "AI数字人",
@@ -160,11 +164,12 @@ export async function GET() {
     const hasHiyoriDefault = configs.some(c => c.avatarStyle === "live2d_Hiyori" && c.isDefault);
     // 旧的真人照片形象已下线，命中则重建为纯 Live2D 预设
     const hasRemovedPresets = configs.some(c => REMOVED_PRESET_NAMES.includes(c.name));
+    const hasXingyunPreset = configs.some(c => c.avatarStyle === XINGYUN_AVATAR_PRESET.avatarStyle);
     
     // Seed database if configurations are incomplete, outdated, using URL avatarStyle, or default is not Hiyori
-    if (configs.length < DEFAULT_PRESETS.length || !hasHiyoriDefault || hasRemovedPresets || (configs[0] && configs[0].avatarStyle.startsWith("http"))) {
+    if (configs.length < ALL_PRESETS.length || !hasHiyoriDefault || hasRemovedPresets || !hasXingyunPreset || (configs[0] && configs[0].avatarStyle.startsWith("http"))) {
       await db.delete(avatarConfigs);
-      await db.insert(avatarConfigs).values(DEFAULT_PRESETS);
+      await db.insert(avatarConfigs).values(ALL_PRESETS);
       configs = await db.select().from(avatarConfigs).where(eq(avatarConfigs.isActive, true)).orderBy(desc(avatarConfigs.createdAt));
     }
     

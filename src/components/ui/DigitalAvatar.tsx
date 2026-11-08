@@ -2,8 +2,13 @@
 import { useState, useEffect, useRef, useId, memo } from "react";
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
+import { isXingyunAvatarStyle, XINGYUN_AVATAR_IMAGE } from "@/lib/xingyun/preset";
 
 const Live2DViewer = dynamic(() => import("./Live2DViewer"), { ssr: false });
+const XingyunAvatar = dynamic(
+  () => import("@/components/xingyun/XingyunAvatar").then((m) => m.XingyunAvatar),
+  { ssr: false },
+);
 
 export type AvatarState = "idle" | "thinking" | "speaking" | "happy" | "concerned";
 
@@ -497,6 +502,7 @@ function DigitalAvatarComponent({ state, size = "md", audioElement, avatarStyle 
   };
 
   const isLive2D = !!avatarStyle && avatarStyle.startsWith("live2d_");
+  const isXingyun = isXingyunAvatarStyle(avatarStyle);
   const live2DPortrait = isLive2D
     ? `/sentio/characters/free/${avatarStyle.replace("live2d_", "")}/${avatarStyle.replace("live2d_", "")}.png`
     : "";
@@ -505,10 +511,14 @@ function DigitalAvatarComponent({ state, size = "md", audioElement, avatarStyle 
   const isVideo = isUrl && !!avatarStyle && (avatarStyle.endsWith(".mp4") || avatarStyle.endsWith(".webm") || avatarStyle.endsWith(".mov") || avatarStyle.includes("video"));
 
   if (size === "hero" || size === "desktop-hero") {
-    const avatarWidth = isLive2D
+    const avatarWidth = isXingyun
+      ? (size === "desktop-hero" ? 470 : 330)
+      : isLive2D
       ? (size === "desktop-hero" ? 520 : 360)
       : px;
-    const avatarHeight = isLive2D
+    const avatarHeight = isXingyun
+      ? (size === "desktop-hero" ? 700 : 540)
+      : isLive2D
       ? (size === "desktop-hero" ? 720 : 500)
       : px * 1.12;
 
@@ -525,7 +535,9 @@ function DigitalAvatarComponent({ state, size = "md", audioElement, avatarStyle 
           className="relative flex items-center justify-center overflow-hidden bg-transparent"
           animate={state === "speaking" ? { y: [0, -3, 0] } : { y: 0 }}
           transition={{ duration: 1.3, repeat: state === "speaking" ? Infinity : 0, ease: "easeInOut" }}>
-          {isLive2D ? (
+          {isXingyun ? (
+            <XingyunAvatar height={avatarHeight} />
+          ) : isLive2D ? (
             <Live2DViewer avatarStyle={avatarStyle} />
           ) : isUrl ? (
             isVideo ? (
@@ -562,7 +574,9 @@ function DigitalAvatarComponent({ state, size = "md", audioElement, avatarStyle 
         transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }} />
       <div className="relative w-full h-full rounded-full overflow-hidden"
         style={{ border: `2px solid ${p.ring}`, boxShadow: `0 0 16px ${p.aura}` }}>
-        {isLive2D ? (
+        {isXingyun ? (
+          <img src={XINGYUN_AVATAR_IMAGE} alt="诗仙数字人" className="w-full h-full object-cover" />
+        ) : isLive2D ? (
           <img src={live2DPortrait} alt="Digital Avatar" className="w-full h-full object-cover" />
         ) : isUrl ? (
           isVideo ? (

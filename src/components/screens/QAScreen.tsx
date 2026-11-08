@@ -13,6 +13,12 @@ import { DigitalAvatar, type AvatarState } from "@/components/ui/DigitalAvatar";
 import { AvatarSelectorModal } from "@/components/ui/AvatarSelectorModal";
 import { toast } from "sonner";
 import {
+  interruptXingyun,
+  speakWithXingyun,
+  subscribeXingyunConversation,
+} from "@/lib/xingyun/agent";
+import { isXingyunAvatarStyle } from "@/lib/xingyun/preset";
+import {
   DEFAULT_VOICE_ID,
   resolveVoiceOption,
   type VoiceOption,
@@ -199,6 +205,7 @@ export function QAScreen() {
       const { Live2dManager } = require("@/lib/live2d/live2dManager");
       Live2dManager.getInstance().stopAudio();
     } catch (e) {}
+    interruptXingyun();
     setIsSynthesizing(false);
     setAvatarState("idle");
   };
@@ -387,6 +394,20 @@ export function QAScreen() {
       })
       .catch((e) => console.error("Failed to load active avatar config", e));
   }, []);
+
+  // 「诗仙」播报状态同步：星云对话/播报状态驱动原有头像状态机
+  useEffect(() => {
+    if (!isXingyunAvatarStyle(selectedStyle)) return;
+    return subscribeXingyunConversation((state) => {
+      if (state === "asking") {
+        setAvatarState("thinking");
+      } else if (state === "speaking" || state === "speaking-directly") {
+        setAvatarState("speaking");
+      } else if (state === "idle" || state === "completed" || state === "interrupted" || state === "failed") {
+        setAvatarState("idle");
+      }
+    });
+  }, [selectedStyle]);
 
   const [avatarWidth, setAvatarWidth] = useState(450); // Default to a wider layout (450px)
   const panelRef = useRef<HTMLDivElement>(null);
@@ -634,6 +655,13 @@ export function QAScreen() {
 
     const cleanedText = text.replace(/\[情感[:：][^\]]+\]/g, "").trim();
     if (!cleanedText) return;
+
+    // 诗仙（魔珐星云具身智能体）：优先使用星云内置语音与 3D 动作播报，未就绪时回退原有 TTS 链路
+    if (isXingyunAvatarStyle(selectedStyle) && speakWithXingyun(cleanedText)) {
+      setIsSynthesizing(false);
+      setAvatarState("speaking");
+      return;
+    }
 
     setIsSynthesizing(true);
     const currentOpt = resolveVoiceOption(selectedVoiceId);
