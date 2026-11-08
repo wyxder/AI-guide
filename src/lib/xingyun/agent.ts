@@ -11,7 +11,6 @@ import type { AgentConversationState, AgentState } from "@xmov/avatar/agent";
  * - 运行态挂在 globalThis 上，确保「渲染组件」与「对话链路」跨 chunk 共享同一实例。
  */
 
-const DEFAULT_GATEWAY = "https://nebula-agent.xingyun3d.com/user/v1/ttsa_v2/session";
 const INIT_TIMEOUT_MS = 60000;
 
 /** 星云驱动应用档案：shixian=诗仙，xiaomei=小美 */
@@ -85,10 +84,13 @@ async function loadCredentials(profile: XingyunAgentProfile): Promise<{ appId: s
   if (!data?.appId || !data?.appSecret) {
     throw new Error("魔珐星云密钥缺失，请联系管理员配置 .env");
   }
+  if (!data?.gatewayServer) {
+    throw new Error("魔珐星云网关地址缺失，请检查 .env 中的 XINGYUN_GATEWAY_SERVER");
+  }
   return {
     appId: data.appId,
     appSecret: data.appSecret,
-    gatewayServer: data.gatewayServer || DEFAULT_GATEWAY,
+    gatewayServer: data.gatewayServer,
   };
 }
 

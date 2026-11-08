@@ -9,7 +9,6 @@ export default function QAPage() {
       <link rel="preload" as="image" href="/sentio/characters/free/Hiyori/thumb.webp" />
       <link rel="preload" as="image" href="/images/李白.png" />
       <link rel="preload" as="image" href="/images/小美.png" />
-      <link rel="preconnect" href="https://nebula-agent.xingyun3d.com" crossOrigin="" />
       <Suspense fallback={<div className="min-h-svh" style={{ background: "#FAF8F5" }} />}>
         <QAScreen />
       </Suspense>

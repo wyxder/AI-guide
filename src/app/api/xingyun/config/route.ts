@@ -16,13 +16,20 @@ export async function GET(req: NextRequest) {
 
   const appId = isXiaomei ? process.env.XINGYUN_XIAOMEI_APP_ID : process.env.XINGYUN_APP_ID;
   const appSecret = isXiaomei ? process.env.XINGYUN_XIAOMEI_APP_SECRET : process.env.XINGYUN_APP_SECRET;
-  const gatewayServer =
-    (isXiaomei ? process.env.XINGYUN_XIAOMEI_GATEWAY_SERVER : process.env.XINGYUN_GATEWAY_SERVER) ||
-    "https://nebula-agent.xingyun3d.com/user/v1/ttsa_v2/session";
+  const gatewayServer = isXiaomei
+    ? process.env.XINGYUN_XIAOMEI_GATEWAY_SERVER
+    : process.env.XINGYUN_GATEWAY_SERVER;
 
   if (!appId || !appSecret) {
     return NextResponse.json(
       { error: isXiaomei ? "小美密钥未配置" : "魔珐星云密钥未配置" },
+      { status: 503 },
+    );
+  }
+
+  if (!gatewayServer) {
+    return NextResponse.json(
+      { error: isXiaomei ? "小美网关地址未配置" : "魔珐星云网关地址未配置" },
       { status: 503 },
     );
   }
