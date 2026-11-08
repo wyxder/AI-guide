@@ -7,7 +7,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { getLocalScenicImage } from "@/lib/scenic-image";
 import { VrPanoramaModal } from "@/components/ui/VrPanoramaModal";
-import { FmMusicSection, startFmFromHome } from "@/components/ui/FmMusicSection";
+import { FmPlayerModal } from "@/components/ui/FmPlayerModal";
+import { playFmTrack, pauseFm } from "@/lib/fm-player";
+import { FM_TRACKS } from "@/lib/fm-tracks";
 
 const SPRING = { type: "spring" as const, stiffness: 300, damping: 32 };
 interface Spot { id: number; name: string; imageUrl: string; rating: number; duration: number }
@@ -25,21 +27,35 @@ const CITY_BANNERS = [
    PCView / MobileView Unified
    ═══════════════════════════════════════════════════════ */
 export default function HomeScreen() {
+  const [fmOpen, setFmOpen] = useState(false);
+
+  /** 点击「伴游FM / 旅途FM」按钮：在用户手势内立即出声，同时打开按钮内的播放面板 */
+  const openFm = () => {
+    playFmTrack(FM_TRACKS[0].id);
+    setFmOpen(true);
+  };
+  const closeFm = () => {
+    pauseFm();
+    setFmOpen(false);
+  };
+
   return (
     <>
       {/* ── 移动端 ── */}
       <div className="md:hidden min-h-svh flex flex-col w-full max-w-full overflow-x-hidden bg-white">
-        <MobileView />
+        <MobileView onOpenFm={openFm} />
       </div>
       {/* ── PC 端 ── */}
       <div className="hidden md:flex h-screen overflow-hidden bg-[#FAF8F5]">
-        <PCView />
+        <PCView onOpenFm={openFm} />
       </div>
+      {/* 伴游FM 按钮内的播放面板 */}
+      <FmPlayerModal open={fmOpen} onClose={closeFm} />
     </>
   );
 }
 
-function PCView() {
+function PCView({ onOpenFm }: { onOpenFm: () => void }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
@@ -247,7 +263,7 @@ function PCView() {
 
           <motion.div
             whileHover={{ y: -4 }}
-            onClick={startFmFromHome}
+            onClick={onOpenFm}
             className="relative bg-gradient-to-br from-[#FCF8EE] to-[#FAF6E8] border border-[#F5EED8] rounded-3xl p-6 min-h-[120px] flex items-center justify-between overflow-hidden shadow-sm cursor-pointer group"
           >
             <div className="space-y-2 relative z-10">
@@ -261,9 +277,6 @@ function PCView() {
             <span className="text-6xl select-none opacity-80 transition-transform duration-300 group-hover:scale-110">📻</span>
           </motion.div>
         </section>
-
-        {/* 伴游FM · 可真实播放的封面歌单 */}
-        <FmMusicSection sectionId="fm-music-section-pc" />
 
         {/* Hot Spots Section */}
         <section className="space-y-4">
@@ -338,13 +351,12 @@ function PCView() {
 /* ═══════════════════════════════════════════════════════
    移动端整体视图
    ═══════════════════════════════════════════════════════ */
-function MobileView() {
+function MobileView({ onOpenFm }: { onOpenFm: () => void }) {
   return (
     <div className="flex flex-col bg-white w-full">
       <MobileHeaderAndBanner />
       <MobileChengduPanel />
-      <MobileEntranceCards />
-      <FmMusicSection sectionId="fm-music-section-mobile" className="px-4 mt-5" />
+      <MobileEntranceCards onOpenFm={onOpenFm} />
       <MobileSpots />
       {/* Bottom spacer for bottom navigation bar */}
       <div style={{ height: 80 }} />
@@ -591,7 +603,7 @@ function MobileChengduPanel() {
 /* ═══════════════════════════════════════════════════════
    Custom Entrance Buttons (全国热门 & 文博精讲 & VR识别)
    ═══════════════════════════════════════════════════════ */
-function MobileEntranceCards() {
+function MobileEntranceCards({ onOpenFm }: { onOpenFm: () => void }) {
   const router = useRouter();
   const [showVrPanorama, setShowVrPanorama] = useState(false);
 
@@ -641,7 +653,7 @@ function MobileEntranceCards() {
       {/* 3. 伴游FM */}
       <motion.div
         whileTap={{ scale: 0.96 }}
-        onClick={startFmFromHome}
+        onClick={onOpenFm}
         className="relative bg-gradient-to-br from-[#FCF8EE] to-[#FAF6E8] border border-[#F5EED8] rounded-2xl p-2.5 h-[84px] flex flex-col justify-between overflow-hidden shadow-[0_2px_8px_rgba(210,160,83,0.03)] cursor-pointer"
       >
         <div className="flex flex-col">

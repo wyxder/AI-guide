@@ -8,8 +8,6 @@ interface Props {
   height?: number;
   /** 星云驱动应用档案：shixian=诗仙（默认），xiaomei=小美 */
   profile?: XingyunAgentProfile;
-  /** 模型整体缩放，用于避免 3D 形象超出容器被裁切（默认 1，等比缩放且以底部中心为原点） */
-  scale?: number;
 }
 
 const PROFILE_TEXT: Record<XingyunAgentProfile, { name: string; loading: string; failed: string }> = {
@@ -21,7 +19,7 @@ const PROFILE_TEXT: Record<XingyunAgentProfile, { name: string; loading: string;
  * 魔珐星云具身智能体 3D 渲染容器（诗仙 / 小美共用）。
  * 容器必须有明确宽高，否则 SDK 画布会折叠为零尺寸。
  */
-export function XingyunAvatar({ height = 500, profile = "shixian", scale = 1 }: Props) {
+export function XingyunAvatar({ height = 500, profile = "shixian" }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(true);
   const [progress, setProgress] = useState(0);
@@ -60,11 +58,7 @@ export function XingyunAvatar({ height = 500, profile = "shixian", scale = 1 }: 
 
   return (
     <div className="relative w-full h-full overflow-hidden" style={{ height }}>
-      <div
-        ref={containerRef}
-        className="w-full h-full"
-        style={{ height, transform: scale === 1 ? undefined : `scale(${scale})`, transformOrigin: "center bottom" }}
-      />
+      <div ref={containerRef} className="w-full h-full" style={{ height }} />
 
       {!ready && !error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-[#0E1512] text-white">

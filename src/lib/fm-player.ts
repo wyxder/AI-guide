@@ -113,6 +113,13 @@ export function useFmPlayer(): FmPlayerState {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
+/** 只启动后台预取、不订阅状态；供首页常驻挂载，避免 timeupdate 触发整页重渲染 */
+export function useFmPrefetch() {
+  useEffect(() => {
+    ensureAudio();
+  }, []);
+}
+
 export function playFmTrack(id: string) {
   const el = ensureAudio();
   const track = FM_TRACK_MAP[id];
