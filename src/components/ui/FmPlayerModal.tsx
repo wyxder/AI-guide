@@ -40,7 +40,7 @@ export function FmPlayerModal({ open, onClose }: { open: boolean; onClose: () =>
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.97 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="relative w-full h-full md:h-auto md:w-[min(94vw,520px)] md:max-h-[88vh] md:rounded-[28px] bg-[#FFF9F6] shadow-[0_30px_80px_rgba(0,0,0,0.28)] overflow-y-auto flex flex-col"
+            className="relative w-full h-full md:h-auto md:w-[min(94vw,520px)] md:max-h-[94vh] md:rounded-[28px] bg-[#FFF9F6] shadow-[0_30px_80px_rgba(0,0,0,0.28)] overflow-y-auto flex flex-col"
           >
             <FmExperience variant="modal" initialView="player" onBack={onClose} />
           </motion.div>

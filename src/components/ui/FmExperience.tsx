@@ -149,8 +149,10 @@ export function FmExperience({ variant = "page", initialView = "interests", onBa
         </div>
       </header>
 
-      {/* ── Main Layout Wrapper ── */}
-      <main className={`flex-1 w-full max-w-4xl mx-auto p-4 md:p-8 flex flex-col items-center relative z-10 ${modal ? "justify-start" : "justify-center"}`}>
+      {/* ── Main Layout Wrapper ──
+          用 div 而非 main：LayoutShell 全局注入了 `main{margin-left:240px!important}`，
+          在首页弹层里会把内容整体推到右边并裁切。 */}
+      <div role="main" className={`flex-1 w-full max-w-4xl mx-auto p-4 md:p-8 flex flex-col items-center relative z-10 ${modal ? "justify-start" : "justify-center"}`}>
 
         {/* ── 节目单：位于播放器组件上方，每首曲目都有专属封面，点击即播 ── */}
         <div className="w-full max-w-md mb-5 bg-white/80 backdrop-blur-xl rounded-3xl border border-[#FFE8E2] p-4 shadow-[0_12px_30px_rgba(255,91,69,0.05)]">
@@ -558,7 +560,7 @@ export function FmExperience({ variant = "page", initialView = "interests", onBa
           </AnimatePresence>
         </div>
 
-      </main>
+      </div>
     </div>
   );
 }
