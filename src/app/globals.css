@@ -517,3 +517,15 @@ html[data-accessibility-mode="child"] .avatar-glow {
   scrollbar-width: none !important;
 }
 
+/* 隐藏 Netlify 免费套餐注入的右下角 "Powered by Netlify" 徽标 */
+.netlify-badge,
+#netlify-badge,
+div[data-netlify-badge],
+iframe[src*="netlify"],
+a[href*="netlify.com"][target="_blank"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
