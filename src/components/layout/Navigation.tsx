@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, MessageCircle, MapPin, Navigation, User, Music,
   BarChart2, BookOpen, Bot, TrendingUp, Settings, ChevronRight,
-  Bell, Gift, LogOut, Clock3, ArrowLeftRight
+  Bell, Gift, LogOut, ArrowLeftRight
 } from "lucide-react";
 import { GlobalSearch } from "@/components/ui/GlobalSearch";
 import { useEazo } from "@eazo/sdk/react";
@@ -26,9 +26,9 @@ const C_TABS = [
 /* ─── B端侧栏导航 ──────────────────────────────────────────── */
 const ADMIN_ITEMS = [
   { href: "/admin", label: "数据大屏", icon: BarChart2, desc: "运营总览" },
+  { href: "/admin/avatar", label: "数字人", icon: Bot, desc: "形象配置" },
   { href: "/admin/spots", label: "景点管理", icon: MapPin, desc: "增删改查" },
   { href: "/admin/knowledge", label: "知识库", icon: BookOpen, desc: "内容管理" },
-  { href: "/admin/avatar", label: "数字人", icon: Bot, desc: "形象配置" },
 ];
 
 /* ════════════════════════════════════════════════════════════
@@ -490,27 +490,16 @@ export function AdminTopNav() {
             <Image src="/image/logo.webp" alt="Logo" width={36} height={36} className="w-full h-full object-cover" />
           </div>
           <div className="leading-none">
-            <p className="text-[15px] font-black tracking-[0.18em] text-[#eafaff] group-hover:text-[#8ff4ff] transition-colors">
-              智慧文旅
+            <p className="text-[16px] sm:text-[20px] font-black tracking-[0.06em] whitespace-nowrap text-[#eafaff] group-hover:text-[#8ff4ff] transition-colors"
+              style={{ textShadow: "0 0 16px rgba(92,236,255,0.45)" }}>
+              智慧文旅AI数字人运营后台
             </p>
-            <p className="mt-1 text-[9px] tracking-[0.22em] text-[#5b9db3]">运营指挥中心</p>
+            <p className="mt-1 text-[9px] tracking-[0.2em] text-[#5b9db3]">SMART TOURISM · AI CONSOLE</p>
           </div>
         </Link>
 
-        {/* 中央装饰标题 */}
-        <div className="hidden xl:flex items-center gap-3 flex-1 justify-center min-w-0">
-          <span className="h-px w-16 bg-gradient-to-r from-transparent to-[#5cecff]/70" />
-          <span className="text-[10px] text-[#5cecff]/80 tracking-[0.3em]">///</span>
-          <span className="text-[17px] font-black tracking-[0.28em] text-[#eafaff]"
-            style={{ textShadow: "0 0 18px rgba(92,236,255,0.55)" }}>
-            智慧文旅数字人运营后台
-          </span>
-          <span className="text-[10px] text-[#5cecff]/80 tracking-[0.3em]">///</span>
-          <span className="h-px w-16 bg-gradient-to-l from-transparent to-[#5cecff]/70" />
-        </div>
-
-        {/* 菜单按钮 */}
-        <nav className="flex items-center gap-2 overflow-x-auto tech-scroll flex-1 xl:flex-none justify-start xl:justify-end">
+        {/* 菜单按钮：紧贴标题右侧 */}
+        <nav className="flex items-center gap-2 overflow-x-auto tech-scroll min-w-0">
           {ADMIN_ITEMS.map((item) => {
             const active = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
             return (
@@ -526,24 +515,21 @@ export function AdminTopNav() {
           })}
         </nav>
 
-        {/* 时钟 / 返回 */}
-        <div className="hidden md:flex items-center gap-3 shrink-0">
-          <div className="flex flex-col items-end leading-none">
-            <span className="tech-num text-[15px] font-black tracking-widest text-[#8ff4ff]"
-              style={{ textShadow: "0 0 12px rgba(92,236,255,0.6)" }}>{clock}</span>
-            <span className="mt-1 text-[9px] tracking-[0.18em] text-[#5b9db3]">{dateText}</span>
-          </div>
+        {/* 时钟 */}
+        <div className="flex flex-col items-start leading-none pl-3 shrink-0"
+          style={{ borderLeft: "1px solid rgba(92,236,255,0.25)" }}>
+          <span className="tech-num text-[12px] sm:text-[15px] font-black tracking-widest text-[#8ff4ff]"
+            style={{ textShadow: "0 0 12px rgba(92,236,255,0.6)" }}>{clock}</span>
+          <span className="mt-1 text-[9px] tracking-[0.18em] text-[#5b9db3]">{dateText}</span>
+        </div>
+
+        {/* 返回前台 */}
+        <div className="hidden md:flex items-center gap-3 shrink-0 ml-auto">
           <motion.button whileTap={{ scale: 0.95 }} onClick={handleExitAdmin}
             className="tech-nav-btn" title="返回游客前台">
             <ArrowLeftRight className="w-4 h-4" />
             返回前台
           </motion.button>
-        </div>
-
-        {/* 移动端时钟 */}
-        <div className="md:hidden flex items-center gap-1.5 shrink-0">
-          <Clock3 className="w-3.5 h-3.5 text-[#5cecff]" />
-          <span className="tech-num text-[12px] font-bold text-[#8ff4ff]">{clock}</span>
         </div>
       </div>
     </header>

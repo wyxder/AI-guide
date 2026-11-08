@@ -9,6 +9,7 @@ import { request } from "@/lib/api/request";
 import Link from "next/link";
 import { QRCodePanel } from "@/components/ui/QRCodePanel";
 import { DigitalAvatar, type AvatarState } from "@/components/ui/DigitalAvatar";
+import { XINGYUN_AVATAR_STYLE } from "@/lib/xingyun/preset";
 
 const SPRING = { type: "spring" as const, stiffness: 280, damping: 35 };
 
@@ -33,11 +34,35 @@ interface DrillLog { id: number; userId?: string; question: string; answer: stri
 const SPOT_NAMES: Record<number, string> = { 1: "揽月亭", 2: "翠玉湖", 3: "听松轩", 4: "百花谷", 5: "古窑遗址", 6: "溪流栈道" };
 /* ── 数字人形象预设 ─────────────────────────────────────── */
 const AVATAR_PRESETS = [
-  { style: "female_hanfu", name: "导览小玉", short: "小玉", role: "HANFU GUIDE · 汉服导览官" },
-  { style: "female_student", name: "研学小知", short: "小知", role: "STUDY BUDDY · 研学助手" },
-  { style: "male_scholar", name: "文墨先生", short: "文墨", role: "SCHOLAR · 文化讲解员" },
-  { style: "female_business", name: "接待小雅", short: "小雅", role: "RECEPTION · 商务接待" },
-  { style: "male_cool", name: "潮玩向导", short: "潮玩", role: "TECH GUIDE · 科技向导" },
+  { style: XINGYUN_AVATAR_STYLE, name: "诗仙·李白", short: "诗仙", role: "POET IMMORTAL · 星云具身智能体" },
+  { style: "live2d_Chitose", name: "Chitose", short: "Chitose", role: "LIVE2D · 千岁" },
+  { style: "live2d_Hiyori", name: "Hiyori", short: "Hiyori", role: "LIVE2D · 日和" },
+  { style: "live2d_Mao", name: "Mao", short: "Mao", role: "LIVE2D · 猫" },
+  { style: "live2d_Shizuku", name: "Shizuku", short: "Shizuku", role: "LIVE2D · 雫" },
+];
+
+/* ── 播报示例：最新热门问题（20 条轮播） ─────────────────── */
+const BROADCAST_QUESTIONS = [
+  "景区有哪些景点？",
+  "门票多少钱一张？",
+  "揽月亭的开放时间是？",
+  "怎么去翠玉湖？",
+  "有没有儿童票和老人票？",
+  "景区内可以坐观光车吗？",
+  "听松轩有什么历史典故？",
+  "百花谷最佳观赏季节是？",
+  "古窑遗址可以体验制陶吗？",
+  "溪流栈道全长多少米？",
+  "附近有什么推荐的餐厅？",
+  "停车场收费标准是多少？",
+  "雨天游览有哪些室内景点？",
+  "景区可以寄存行李吗？",
+  "有讲解服务或语音导览吗？",
+  "学生证可以享受优惠吗？",
+  "景区内有卫生间和母婴室吗？",
+  "夜游项目几点开始？",
+  "可以带宠物入园吗？",
+  "景区周边有什么住宿推荐？",
 ];
 
 const INTEREST_COLORS: Record<string, string> = {
@@ -174,11 +199,9 @@ export function AdminAnalyticsScreen() {
   };
 
   /* ── 派生数据 ─────────────────────────────────────────── */
-  const sorted = [...data].reverse();
   const totalQuestions = data.reduce((s, d) => s + d.totalQuestions, 0);
   const avgVisitors = data.length > 0 ? Math.round(data.reduce((s, d) => s + d.totalVisitors, 0) / data.length) : 0;
   const avgSat = data.length > 0 ? data.reduce((s, d) => s + d.satisfactionScore, 0) / data.length : 0;
-  const maxQ = Math.max(...data.map((d) => d.totalQuestions), 1);
   const displaySpots = hotSpots.length > 0 ? hotSpots.slice(0, 5) : [2, 1, 4, 6, 3].map((id) => ({ spotId: id, visits: 0 }));
   const topSpotName = hotSpots.length > 0 ? (SPOT_NAMES[hotSpots[0].spotId] ?? "翠玉湖") : "翠玉湖";
   const displayWords = wordCloud.length > 0 ? wordCloud.slice(0, 15) : [
@@ -189,6 +212,7 @@ export function AdminAnalyticsScreen() {
   const topQs = (data[0]?.topQuestions && data[0].topQuestions.length > 0)
     ? data[0].topQuestions
     : ["景区有哪些景点？", "门票多少钱？", "揽月亭的历史？", "怎么去翠玉湖？", "有没有儿童票？"];
+  const broadcastList = Array.from(new Set([...topQs, ...BROADCAST_QUESTIONS])).slice(0, 20);
 
   const sentiments = [
     { key: "positive", label: "正面/愉快", count: data.reduce((s, d) => s + (d.sentimentPositive || 0), 0), color: T.mint },
@@ -238,6 +262,30 @@ export function AdminAnalyticsScreen() {
           </div>
         </div>
 
+        {/* ── 实时播报：最新热门问题轮播 ─────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={SPRING}
+          className="tech-panel px-4 py-2 flex items-center gap-3 overflow-hidden">
+          <span className="tech-chip shrink-0" style={{ color: T.mint, borderColor: "rgba(61,253,192,0.3)" }}>
+            <span className="tech-live-dot" />播报
+          </span>
+          <div className="overflow-hidden flex-1 min-w-0">
+            <div className="tech-marquee text-[11px]" style={{ color: T.muted, animationDuration: "80s" }}>
+              {[0, 1].map((k) => (
+                <span key={k} className="inline-flex">
+                  {broadcastList.map((q, i) => (
+                    <span key={`${k}-${i}`} className="mx-5 inline-flex items-center gap-1.5">
+                      <span className="tech-num" style={{ color: T.cyanDeep }}>{String(i + 1).padStart(2, "0")}</span>
+                      <span>{q}</span>
+                      <span style={{ color: T.faint }}>◇</span>
+                    </span>
+                  ))}
+                </span>
+              ))}
+            </div>
+          </div>
+          <span className="tech-num text-[10px] shrink-0" style={{ color: T.faint }}>最新 {broadcastList.length} 条 · 每 30s 同步</span>
+        </motion.div>
+
         {/* ── KPI ──────────────────────────────────────── */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={SPRING}
           className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
@@ -266,7 +314,7 @@ export function AdminAnalyticsScreen() {
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)_minmax(0,0.95fr)] gap-4">
 
           {/* 左列 */}
-          <div className="space-y-4 order-2 xl:order-1">
+          <div className="flex flex-col gap-4 order-2 xl:order-1">
             {/* 景区全景 */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING, delay: 0.12 }}
               className="tech-panel tech-hero h-[232px] flex flex-col justify-between">
@@ -353,90 +401,111 @@ export function AdminAnalyticsScreen() {
                 </div>
               )}
             </motion.div>
+
+            {/* 热门问题 Top5 */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING, delay: 0.26 }}
+              className="tech-panel p-4">
+              <PanelTitle title="热门问题 Top5" right={<span className="tech-chip" style={{ color: T.gold, borderColor: "rgba(255,200,87,0.28)" }}>游客真实提问</span>} />
+              <div className="space-y-2.5">
+                {topQs.slice(0, 5).map((q, i) => (
+                  <div key={i} className="flex items-center gap-2.5 min-w-0 group" title={q}>
+                    <span className="tech-num w-5 h-5 flex items-center justify-center text-[10px] font-black shrink-0"
+                      style={{
+                        color: i < 3 ? "#04141d" : T.faint,
+                        background: i < 3 ? "linear-gradient(135deg, #FFE39B, #FFC857)" : "rgba(92,236,255,0.10)",
+                        border: i < 3 ? "none" : "1px solid rgba(92,236,255,0.2)",
+                        boxShadow: i < 3 ? "0 0 10px rgba(255,200,87,0.35)" : "none",
+                        clipPath: "polygon(3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%, 0 3px)",
+                      }}>{i + 1}</span>
+                    <span className="text-[11.5px] truncate flex-1 min-w-0 transition-colors group-hover:text-white"
+                      style={{ color: T.sub }}>{q}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
           </div>
 
-          {/* 中列 */}
-          <div className="space-y-4 order-1 xl:order-2">
-            {/* 满意度趋势 */}
+          {/* 中列：数字人形象展示（可切换形象） */}
+          <div className="flex flex-col order-1 xl:order-2">
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING, delay: 0.14 }}
-              className="tech-panel p-4">
-              <PanelTitle title="满意度趋势" right={<span className="tech-chip" style={{ color: T.mint, borderColor: "rgba(61,253,192,0.28)" }}>7日走势</span>} />
-              {loading ? <div className="tech-skeleton h-[150px]" /> : data.length === 0 ? (
-                <div className="h-[150px] flex items-center justify-center text-[11px]" style={{ color: T.faint }}>暂无数据</div>
-              ) : (() => {
-                const W = 300, H = 136, padX = 16, padY = 20;
-                const maxSat = Math.max(...sorted.map((d) => d.satisfactionScore), 1);
-                const pts = sorted.map((d, i) => {
-                  const x = padX + (i / Math.max(sorted.length - 1, 1)) * (W - padX * 2);
-                  const y = H - padY - (d.satisfactionScore / maxSat) * (H - padY * 2);
-                  return { x, y, d };
-                });
-                const polyline = pts.map((p) => `${p.x},${p.y}`).join(" ");
-                const area = `M${pts[0]?.x ?? padX},${H - padY} ` + pts.map((p) => `L${p.x},${p.y}`).join(" ") + ` L${pts[pts.length - 1]?.x ?? W - padX},${H - padY} Z`;
-                return (
-                  <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 150, overflow: "visible" }}>
-                    <defs>
-                      <linearGradient id="satArea" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={T.mint} stopOpacity="0.35" />
-                        <stop offset="100%" stopColor={T.mint} stopOpacity="0" />
-                      </linearGradient>
-                    </defs>
-                    {[0.25, 0.5, 0.75].map((r) => (
-                      <line key={r} x1={padX} x2={W - padX} y1={padY + (H - padY * 2) * r} y2={padY + (H - padY * 2) * r}
-                        stroke="rgba(92,236,255,0.16)" strokeWidth="1" strokeDasharray="4 6" />
-                    ))}
-                    <path d={area} fill="url(#satArea)" />
-                    <polyline points={polyline} fill="none" stroke={T.mint} strokeWidth="2"
-                      strokeLinejoin="round" strokeLinecap="round" style={{ filter: "drop-shadow(0 0 6px rgba(61,253,192,0.65))" }} />
-                    {pts.map((p, i) => (
-                      <g key={i}>
-                        <circle cx={p.x} cy={p.y} r={7} fill="rgba(61,253,192,0.12)" />
-                        <circle cx={p.x} cy={p.y} r={3} fill="#04141d" stroke={T.mint} strokeWidth="1.6" />
-                        <text x={p.x} y={p.y - 11} textAnchor="middle" fontSize="8" fill={T.mint} fontWeight="700">{p.d.satisfactionScore || 0}</text>
-                        <text x={p.x} y={H - 4} textAnchor="middle" fontSize="7.5" fill={T.faint}>{p.d.date.slice(5)}</text>
-                      </g>
-                    ))}
-                  </svg>
-                );
-              })()}
-            </motion.div>
+              className="tech-panel relative p-4 flex flex-col flex-1 overflow-hidden">
+              <div className="absolute inset-x-0 bottom-0 h-52 pointer-events-none"
+                style={{ background: "radial-gradient(ellipse at 50% 100%, rgba(92,236,255,0.20), transparent 72%)" }} />
 
-            {/* 问答量趋势 */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING, delay: 0.18 }}
-              className="tech-panel p-4">
-              <PanelTitle title="问答量趋势" right={<span className="tech-chip">单位: 条</span>} />
-              {loading ? <div className="tech-skeleton h-[164px]" /> : (
-                <div className="flex items-end gap-2 h-[164px] pt-1">
-                  {sorted.map((d, i) => {
-                    const pct = (d.totalQuestions / maxQ) * 100;
+              <PanelTitle title="数字人形象展示" right={
+                <span className="tech-chip" style={{ color: T.mint, borderColor: "rgba(61,253,192,0.28)" }}>
+                  <span className="tech-live-dot" />在线服务中
+                </span>
+              } />
+
+              {/* 舞台（固定高度 + 等比缩放，避免面板过高） */}
+              <div className="relative w-full shrink-0" style={{ height: 392 }}>
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[282px] h-[282px] rounded-full pointer-events-none"
+                  style={{ border: "1px solid rgba(92,236,255,0.14)" }} />
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[228px] h-[228px] pointer-events-none">
+                  <div className="w-full h-full rounded-full"
+                    style={{ border: "1px dashed rgba(92,236,255,0.30)", animation: "techSpinSlow 26s linear infinite" }} />
+                </div>
+                <div className="absolute left-1/2 bottom-[44px] -translate-x-1/2 w-[178px] h-[24px] pointer-events-none"
+                  style={{
+                    border: "1px solid rgba(92,236,255,0.5)",
+                    borderRadius: "50%",
+                    boxShadow: "0 0 22px rgba(92,236,255,0.4), inset 0 0 18px rgba(92,236,255,0.2)",
+                  }} />
+
+                <div className="absolute left-1/2 top-1/2 z-10"
+                  style={{ transform: "translate(-50%, -50%) scale(0.7)", transformOrigin: "center center" }}>
+                  <DigitalAvatar state={avatarState} size="hero" avatarStyle={AVATAR_PRESETS[avatarIndex].style} />
+                </div>
+              </div>
+
+              <div className="relative z-10 text-center">
+                <p className="text-[17px] font-black tracking-[0.12em] text-[#EAFAFF]"
+                  style={{ textShadow: "0 0 16px rgba(92,236,255,0.55)" }}>{AVATAR_PRESETS[avatarIndex].name}</p>
+                <p className="text-[9.5px] tracking-[0.22em] mt-1" style={{ color: T.faint }}>{AVATAR_PRESETS[avatarIndex].role}</p>
+                <div className="flex items-center justify-center gap-2 mt-2.5">
+                  <span className="tech-chip">今日接待 {totalQuestions} 次</span>
+                  <span className="tech-chip" style={{ color: T.mint, borderColor: "rgba(61,253,192,0.28)" }}>
+                    满意度 {avgSat.toFixed(1)}
+                  </span>
+                </div>
+              </div>
+
+              {/* 形象切换 */}
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] tracking-[0.16em]" style={{ color: T.faint }}>点击切换形象</span>
+                  <span className="tech-num text-[10px]" style={{ color: T.cyan }}>
+                    {avatarIndex + 1} / {AVATAR_PRESETS.length}
+                  </span>
+                </div>
+                <div className="grid grid-cols-5 gap-2">
+                  {AVATAR_PRESETS.map((preset, i) => {
+                    const active = avatarIndex === i;
                     return (
-                      <div key={d.date} className="flex-1 flex flex-col justify-end items-center h-full group cursor-default">
-                        <span className="tech-num text-[10px] font-bold mb-1 transition-all duration-200 group-hover:scale-110"
-                          style={{ color: T.gold }}>{d.totalQuestions}</span>
-                        <div className="w-full flex-1 flex items-end justify-center relative px-[2px]">
-                          <motion.div initial={{ height: 0 }} animate={{ height: `${Math.max(pct, 4)}%` }}
-                            transition={{ ...SPRING, delay: 0.1 + i * 0.05 }}
-                            className="w-full relative overflow-hidden transition-all duration-300"
-                            style={{
-                              background: "linear-gradient(180deg, #9DF7FF 0%, #39D8F0 45%, #0E7FA0 100%)",
-                              boxShadow: "0 0 12px rgba(92,236,255,0.45), inset 0 0 8px rgba(255,255,255,0.25)",
-                              clipPath: "polygon(0 5px, 5px 0, 100% 0, 100% 100%, 0 100%)",
-                            }}>
-                            <span className="absolute inset-x-0 top-0 h-1/2 opacity-40"
-                              style={{ background: "linear-gradient(180deg, #ffffff, transparent)" }} />
-                          </motion.div>
-                        </div>
-                        <span className="tech-num text-[9.5px] mt-1.5" style={{ color: T.faint }}>{d.date.slice(5)}</span>
-                      </div>
+                      <motion.button key={preset.style} whileTap={{ scale: 0.94 }}
+                        onClick={() => setAvatarIndex(i)}
+                        className="relative flex flex-col items-center gap-1 py-1.5 cursor-pointer transition-colors"
+                        style={{
+                          border: active ? "1px solid rgba(92,236,255,0.75)" : "1px solid rgba(64,224,255,0.15)",
+                          background: active ? "rgba(92,236,255,0.12)" : "rgba(6,26,36,0.55)",
+                          boxShadow: active ? "0 0 14px rgba(92,236,255,0.25)" : "none",
+                          clipPath: "polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)",
+                        }}>
+                        <DigitalAvatar state="idle" size="sm" avatarStyle={preset.style} />
+                        <span className="text-[9px] truncate max-w-full" style={{ color: active ? T.cyan : T.muted }}>
+                          {preset.short}
+                        </span>
+                      </motion.button>
                     );
                   })}
                 </div>
-              )}
+              </div>
             </motion.div>
           </div>
 
           {/* 右列 */}
-          <div className="space-y-4 order-3 xl:order-3">
+          <div className="flex flex-col gap-4 order-3 xl:order-3">
             {/* 热门景点排行 */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING, delay: 0.2 }}
               className="tech-panel p-4">
@@ -510,69 +579,47 @@ export function AdminAnalyticsScreen() {
                 <div className="text-[11px] py-6 text-center" style={{ color: T.faint }}>暂无高频词数据</div>
               )}
             </motion.div>
+
+            {/* 问答情感分布 */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING, delay: 0.28 }}
+              className="tech-panel p-4">
+              <PanelTitle title="问答情感分布" right={<span className="tech-chip">点击柱形下钻</span>} />
+              {loading ? <div className="tech-skeleton h-[150px]" /> : (
+                <div className="flex items-end justify-around h-[150px]">
+                  {sentiments.map((s) => {
+                    const pct = Math.round((s.count / sentimentTotal) * 100);
+                    return (
+                      <motion.button key={s.key} whileHover={{ y: -4 }} whileTap={{ scale: 0.95 }}
+                        onClick={() => openDrillDown(s.key, s.label)}
+                        className="flex flex-col items-center gap-1.5 focus:outline-none cursor-pointer group">
+                        <span className="tech-num text-[10px] font-bold" style={{ color: s.color }}>
+                          {s.count}次 ({pct}%)
+                        </span>
+                        <div className="w-11 relative overflow-hidden"
+                          style={{
+                            height: `${Math.max(16, (s.count / maxSentiment) * 92)}px`,
+                            background: `linear-gradient(180deg, ${s.color}cc, ${s.color}33)`,
+                            boxShadow: `0 0 14px ${s.color}66, inset 0 0 8px rgba(255,255,255,0.2)`,
+                            clipPath: "polygon(0 6px, 6px 0, 100% 0, 100% 100%, 0 100%)",
+                          }}>
+                          <span className="absolute inset-x-0 top-0 h-1/3 opacity-50"
+                            style={{ background: "linear-gradient(180deg, #ffffff, transparent)" }} />
+                        </div>
+                        <span className="text-[10px]" style={{ color: T.sub }}>{s.label}</span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              )}
+            </motion.div>
           </div>
         </div>
 
-        {/* ── 第三排 ───────────────────────────────────── */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          {/* 问答情感分布 */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING, delay: 0.26 }}
-            className="tech-panel p-4">
-            <PanelTitle title="问答情感分布" right={<span className="tech-chip">点击柱形下钻</span>} />
-            {loading ? <div className="tech-skeleton h-[150px]" /> : (
-              <div className="flex items-end justify-around h-[150px]">
-                {sentiments.map((s) => {
-                  const pct = Math.round((s.count / sentimentTotal) * 100);
-                  return (
-                    <motion.button key={s.key} whileHover={{ y: -4 }} whileTap={{ scale: 0.95 }}
-                      onClick={() => openDrillDown(s.key, s.label)}
-                      className="flex flex-col items-center gap-1.5 focus:outline-none cursor-pointer group">
-                      <span className="tech-num text-[10px] font-bold" style={{ color: s.color }}>
-                        {s.count}次 ({pct}%)
-                      </span>
-                      <div className="w-11 relative overflow-hidden"
-                        style={{
-                          height: `${Math.max(16, (s.count / maxSentiment) * 92)}px`,
-                          background: `linear-gradient(180deg, ${s.color}cc, ${s.color}33)`,
-                          boxShadow: `0 0 14px ${s.color}66, inset 0 0 8px rgba(255,255,255,0.2)`,
-                          clipPath: "polygon(0 6px, 6px 0, 100% 0, 100% 100%, 0 100%)",
-                        }}>
-                        <span className="absolute inset-x-0 top-0 h-1/3 opacity-50"
-                          style={{ background: "linear-gradient(180deg, #ffffff, transparent)" }} />
-                      </div>
-                      <span className="text-[10px]" style={{ color: T.sub }}>{s.label}</span>
-                    </motion.button>
-                  );
-                })}
-              </div>
-            )}
-          </motion.div>
-
-          {/* 热门问题 Top5 */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING, delay: 0.28 }}
-            className="tech-panel p-4">
-            <PanelTitle title="热门问题 Top5" right={<span className="tech-chip" style={{ color: T.gold, borderColor: "rgba(255,200,87,0.28)" }}>游客真实提问</span>} />
-            <div className="space-y-2.5">
-              {topQs.slice(0, 5).map((q, i) => (
-                <div key={i} className="flex items-center gap-2.5 min-w-0 group" title={q}>
-                  <span className="tech-num w-5 h-5 flex items-center justify-center text-[10px] font-black shrink-0"
-                    style={{
-                      color: i < 3 ? "#04141d" : T.faint,
-                      background: i < 3 ? "linear-gradient(135deg, #FFE39B, #FFC857)" : "rgba(92,236,255,0.10)",
-                      border: i < 3 ? "none" : "1px solid rgba(92,236,255,0.2)",
-                      boxShadow: i < 3 ? "0 0 10px rgba(255,200,87,0.35)" : "none",
-                      clipPath: "polygon(3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%, 0 3px)",
-                    }}>{i + 1}</span>
-                  <span className="text-[11.5px] truncate flex-1 min-w-0 transition-colors group-hover:text-white"
-                    style={{ color: T.sub }}>{q}</span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
+        {/* ── 第四排：AI 建议 + 快捷入口 + 二维码 ─────────────── */}
+        <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_minmax(0,0.85fr)_minmax(0,0.85fr)] gap-4">
           {/* 快捷入口 */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING, delay: 0.3 }}
-            className="tech-panel p-4">
+            className="tech-panel p-4 order-2">
             <PanelTitle title="运营快捷入口" right={<span className="tech-chip">管理中心</span>} />
             <div className="space-y-2.5">
               {[
@@ -595,12 +642,9 @@ export function AdminAnalyticsScreen() {
               ))}
             </div>
           </motion.div>
-        </div>
 
-        {/* ── 第四排：AI 建议 + 二维码 ─────────────────── */}
-        <div className="grid grid-cols-1 xl:grid-cols-[1.6fr_minmax(0,1fr)] gap-4">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING, delay: 0.32 }}
-            className="tech-panel p-4">
+            className="tech-panel p-4 order-1">
             <PanelTitle title="AI 智能运营建议" right={
               <span className="tech-chip" style={{ color: T.gold, borderColor: "rgba(255,200,87,0.3)" }}>
                 <Sparkles className="w-3 h-3" />实时生成
@@ -648,31 +692,9 @@ export function AdminAnalyticsScreen() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING, delay: 0.34 }}
-            className="tech-panel p-4">
+            className="tech-panel p-4 order-3">
             <QRCodePanel theme="tech" />
           </motion.div>
-        </div>
-
-        {/* ── 底部实时播报 ─────────────────────────────── */}
-        <div className="tech-panel px-4 py-2 flex items-center gap-3 overflow-hidden">
-          <span className="tech-chip shrink-0" style={{ color: T.mint, borderColor: "rgba(61,253,192,0.3)" }}>
-            <span className="tech-live-dot" />播报
-          </span>
-          <div className="overflow-hidden flex-1 min-w-0">
-            <div className="tech-marquee text-[11px]" style={{ color: T.muted }}>
-              {[0, 1].map((k) => (
-                <span key={k} className="inline-flex">
-                  {displayWords.slice(0, 8).map((w, i) => (
-                    <span key={`${k}-${i}`} className="mx-5 inline-flex items-center gap-1.5">
-                      <span style={{ color: T.cyanDeep }}>◇</span>
-                      {w.word} <span className="tech-num" style={{ color: T.faint }}>{w.count}</span>
-                    </span>
-                  ))}
-                </span>
-              ))}
-            </div>
-          </div>
-          <span className="tech-num text-[10px] shrink-0" style={{ color: T.faint }}>每 30s 自动同步</span>
         </div>
       </div>
 

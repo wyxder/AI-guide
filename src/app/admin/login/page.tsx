@@ -134,27 +134,6 @@ export default function AdminLoginPage() {
               <span className="font-bold text-[#DDF4FF]">123456</span>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setEmail("wyxcode@qq.com");
-              setPassword("123456");
-              setLoading(true);
-              localStorage.setItem("eazo.session", JSON.stringify({
-                isMock: true,
-                userId: "admin",
-                email: "wyxcode@qq.com",
-              }));
-              toast.success("测试管理员账号一键填充，登录成功！");
-              setTimeout(() => {
-                window.location.href = "/admin";
-              }, 400);
-            }}
-            disabled={loading}
-            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#D2A053] to-[#B8843A] hover:from-[#e0ae60] hover:to-[#c49045] text-white text-xs font-extrabold shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            ⚡ 一键登录测试账号 (wyxcode@qq.com)
-          </button>
         </div>
       </motion.div>
     </div>
