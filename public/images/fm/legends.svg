@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8A5322"/><stop offset="100%" stop-color="#C99342"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="42%" r="65%">
+      <stop offset="0%" stop-color="#FFE3A6" stop-opacity=".22"/>
+      <stop offset="100%" stop-color="#FFE3A6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="veil" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="45%" stop-color="#8A5322" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#10100E" stop-opacity=".62"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="600" fill="url(#bg)"/>
+  <rect width="600" height="600" fill="url(#glow)"/>
+  <g><line x1="420.0" y1="300.0" x2="565.0" y2="300.0" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="415.9" y1="331.1" x2="556.0" y2="368.6" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="403.9" y1="360.0" x2="529.5" y2="432.5" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="384.9" y1="384.9" x2="487.4" y2="487.4" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="360.0" y1="403.9" x2="432.5" y2="529.5" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="331.1" y1="415.9" x2="368.6" y2="556.0" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="300.0" y1="420.0" x2="300.0" y2="565.0" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="268.9" y1="415.9" x2="231.4" y2="556.0" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="240.0" y1="403.9" x2="167.5" y2="529.5" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="215.1" y1="384.9" x2="112.6" y2="487.4" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="196.1" y1="360.0" x2="70.5" y2="432.5" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="184.1" y1="331.1" x2="44.0" y2="368.6" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="180.0" y1="300.0" x2="35.0" y2="300.0" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="184.1" y1="268.9" x2="44.0" y2="231.4" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="196.1" y1="240.0" x2="70.5" y2="167.5" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="215.1" y1="215.1" x2="112.6" y2="112.6" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="240.0" y1="196.1" x2="167.5" y2="70.5" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="268.9" y1="184.1" x2="231.4" y2="44.0" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="300.0" y1="180.0" x2="300.0" y2="35.0" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="331.1" y1="184.1" x2="368.6" y2="44.0" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="360.0" y1="196.1" x2="432.5" y2="70.5" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="384.9" y1="215.1" x2="487.4" y2="112.6" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="403.9" y1="240.0" x2="529.5" y2="167.5" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><line x1="415.9" y1="268.9" x2="556.0" y2="231.4" stroke="#FFE3A6" stroke-width="1.5" opacity=".38"/><circle cx="300" cy="300" r="105" fill="none" stroke="#FFE3A6" stroke-width="1.4" opacity=".65"/><path d="M405.0 300.0 A105 105 0 0 1 300.0 405.0" fill="none" stroke="#FFE3A6" stroke-width="3" opacity=".55"/><path d="M300.0 405.0 A105 105 0 0 1 195.0 300.0" fill="none" stroke="#FFE3A6" stroke-width="3" opacity=".55"/><path d="M195.0 300.0 A105 105 0 0 1 300.0 195.0" fill="none" stroke="#FFE3A6" stroke-width="3" opacity=".55"/><path d="M300.0 195.0 A105 105 0 0 1 405.0 300.0" fill="none" stroke="#FFE3A6" stroke-width="3" opacity=".55"/></g>
+  <rect width="600" height="600" fill="url(#veil)"/>
+  <rect x="26" y="26" width="548" height="548" fill="none" stroke="#FFE3A6" stroke-width="1" opacity=".38"/>
+  <rect x="34" y="34" width="532" height="532" fill="none" stroke="#FFE3A6" stroke-width=".5" opacity=".22"/>
+  <text x="58" y="76" fill="#FFE3A6" font-size="15" letter-spacing="5" opacity=".9"
+        font-family="Arial, Helvetica, sans-serif">TRAVELER FM  ·  伴游FM</text>
+  <line x1="58" y1="92" x2="542" y2="92" stroke="#FFE3A6" stroke-width="1" opacity=".38"/>
+  <text x="300" y="330" text-anchor="middle" fill="#FFF9EE" font-size="66" font-weight="700"
+        letter-spacing="10" font-family="Noto Serif SC, Songti SC, STSong, SimSun, serif">神鸟逐日</text>
+  <text x="300" y="374" text-anchor="middle" fill="#FFE3A6" font-size="15" letter-spacing="6"
+        font-family="Arial, Helvetica, sans-serif" opacity=".92">SUN BIRD IN FLIGHT</text>
+  <line x1="240" y1="404" x2="360" y2="404" stroke="#FFE3A6" stroke-width="1" opacity=".6"/>
+  <text x="58" y="548" fill="#FFE3A6" font-size="17" letter-spacing="3"
+        font-family="Arial, Helvetica, sans-serif">NO.07</text>
+  <text x="542" y="548" text-anchor="end" fill="#FFE3A6" font-size="17" letter-spacing="2"
+        font-family="Arial, Helvetica, sans-serif">00:24</text>
+</svg>

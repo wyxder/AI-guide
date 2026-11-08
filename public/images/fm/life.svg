@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5D6650"/><stop offset="100%" stop-color="#A8A079"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="42%" r="65%">
+      <stop offset="0%" stop-color="#E9DCBB" stop-opacity=".22"/>
+      <stop offset="100%" stop-color="#E9DCBB" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="veil" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="45%" stop-color="#5D6650" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#10100E" stop-opacity=".62"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="600" fill="url(#bg)"/>
+  <rect width="600" height="600" fill="url(#glow)"/>
+  <g><path d="M120 470 C80 390 180 340 120 250 C80 190 160 150 140 80" fill="none" stroke="#E9DCBB" stroke-width="1.4" opacity=".34"/><path d="M210 470 C170 390 270 340 210 250 C170 190 250 150 230 80" fill="none" stroke="#E9DCBB" stroke-width="1.4" opacity=".34"/><path d="M300 470 C260 390 360 340 300 250 C260 190 340 150 320 80" fill="none" stroke="#E9DCBB" stroke-width="1.4" opacity=".34"/><path d="M390 470 C350 390 450 340 390 250 C350 190 430 150 410 80" fill="none" stroke="#E9DCBB" stroke-width="1.4" opacity=".34"/><path d="M480 470 C440 390 540 340 480 250 C440 190 520 150 500 80" fill="none" stroke="#E9DCBB" stroke-width="1.4" opacity=".34"/><ellipse cx="300" cy="492" rx="150" ry="26" fill="none" stroke="#E9DCBB" stroke-width="1.6" opacity=".55"/></g>
+  <rect width="600" height="600" fill="url(#veil)"/>
+  <rect x="26" y="26" width="548" height="548" fill="none" stroke="#E9DCBB" stroke-width="1" opacity=".38"/>
+  <rect x="34" y="34" width="532" height="532" fill="none" stroke="#E9DCBB" stroke-width=".5" opacity=".22"/>
+  <text x="58" y="76" fill="#E9DCBB" font-size="15" letter-spacing="5" opacity=".9"
+        font-family="Arial, Helvetica, sans-serif">TRAVELER FM  ·  伴游FM</text>
+  <line x1="58" y1="92" x2="542" y2="92" stroke="#E9DCBB" stroke-width="1" opacity=".38"/>
+  <text x="300" y="330" text-anchor="middle" fill="#FFF9EE" font-size="66" font-weight="700"
+        letter-spacing="10" font-family="Noto Serif SC, Songti SC, STSong, SimSun, serif">盖碗茶香</text>
+  <text x="300" y="374" text-anchor="middle" fill="#E9DCBB" font-size="15" letter-spacing="6"
+        font-family="Arial, Helvetica, sans-serif" opacity=".92">TEA HOUSE HOURS</text>
+  <line x1="240" y1="404" x2="360" y2="404" stroke="#E9DCBB" stroke-width="1" opacity=".6"/>
+  <text x="58" y="548" fill="#E9DCBB" font-size="17" letter-spacing="3"
+        font-family="Arial, Helvetica, sans-serif">NO.05</text>
+  <text x="542" y="548" text-anchor="end" fill="#E9DCBB" font-size="17" letter-spacing="2"
+        font-family="Arial, Helvetica, sans-serif">00:29</text>
+</svg>

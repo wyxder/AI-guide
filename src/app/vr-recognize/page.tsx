@@ -3,42 +3,11 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
-  Camera, Upload, Sparkles, ChevronLeft, Volume2, VolumeX, Loader2,
-  Compass, Info, Eye, HelpCircle, ScanLine, BadgeCheck, BookOpen,
+  Camera, Sparkles, ChevronLeft, Volume2, VolumeX, Loader2,
+  Compass, Info, HelpCircle, ScanLine, BadgeCheck, BookOpen,
   Lightbulb, RotateCcw, MessageSquareText, Image as ImageIcon
 } from "lucide-react";
 import { toast } from "sonner";
-
-// Curated museum presets with high-quality images and cultural stories
-const PRESETS = [
-  {
-    id: 1,
-    name: "三星堆青铜神树",
-    type: "国家一级文物",
-    img: "/images/spots/sanxingdui-bronze-tree.webp",
-    subject: "三星堆一号青铜神树",
-    story: "此神树高达3.96米，分为三层，每层三枝，共九枝，每枝上伫立一只昂首的神鸟。它完美反映了古蜀先民对太阳及“十日传说”的自然崇拜。神树上蜿蜒盘绕的青铜巨龙，更揭示了古蜀文化与中原文明之间源远流长、血脉相连的深刻纽带，是中华文明多元一体格局的重要实证。",
-    tip: "建议从斜下方仰视拍摄，配合展厅内部的聚焦光影，能完美凸显神树的宏伟气势与古蜀文明的神秘色彩。"
-  },
-  {
-    id: 2,
-    name: "武侯祠红墙竹影",
-    type: "三国蜀汉遗迹",
-    img: "/images/spots/10061.webp",
-    subject: "武侯祠红墙夹道与惠陵",
-    story: "这道夹在汉昭烈庙与惠陵之间的粉红墙通道，红色的粉墙与挺拔的翠竹交相辉映，竹影随风斑驳。厚重温润的历史朱红墙面与翠竹的清幽静谧完美融合，形成了武侯祠最具代表性的“红墙夹道”景观，诉说着三国蜀汉文化的深邃底蕴与君臣合祀的千古佳话。",
-    tip: "利用透视原理站在夹道中央，等待阳光穿过竹叶在红墙上留下斑驳光影时按下快门，静谧的古风意境绝佳。"
-  },
-  {
-    id: 3,
-    name: "越王勾践青铜剑",
-    type: "春秋国宝重器",
-    img: "/images/spots/sword-of-goujian.webp",
-    subject: "越王勾践自作用剑",
-    story: "此剑全长55.6厘米，剑身满饰黑色菱形暗格纹，剑格正面镶有蓝色琉璃，背面镶有绿松石。出土时千年不锈，锋利无比。剑身刻有“越王勾践 自作用剑”鸟篆铭文，展现了春秋战国时期极高的铸剑科技与冷兵器艺术巅峰。",
-    tip: "拍摄时建议对焦于剑身上的黑色菱形暗纹与鸟篆铭文，利用展示柜顶部射光突出青铜金属冷冽的质感与暗纹流光。"
-  }
-];
 
 interface RecognizeResult {
   subject: string;
@@ -58,10 +27,8 @@ const STEP_PERCENT = [0, 18, 42, 68, 92, 100];
 
 export default function VRRecognizePage() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Interaction states
-  const [selectedPreset, setSelectedPreset] = useState<typeof PRESETS[0] | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -121,7 +88,6 @@ export default function VRRecognizePage() {
       setIsCameraActive(true);
       setPreviewUrl(null);
       setSelectedFile(null);
-      setSelectedPreset(null);
       setRecognizeResult(null);
       setScanStep(0);
       setScanning(false);
@@ -133,7 +99,7 @@ export default function VRRecognizePage() {
 
   // Perform 3D Scan and multi-modal recognition
   // 显式传参，避免异步回调中读取到旧的状态值
-  const runRecognition = async (url: string, file: File | null, preset: typeof PRESETS[0] | null) => {
+  const runRecognition = async (url: string, file: File | null) => {
     if (!url || scanning) return;
 
     setScanning(true);
@@ -148,37 +114,28 @@ export default function VRRecognizePage() {
     setScanStep(4);
 
     try {
-      if (preset) {
+      const formData = new FormData();
+      if (file) {
+        formData.append("image", file);
+      } else {
+        const resBlob = await fetch(url);
+        const blob = await resBlob.blob();
+        formData.append("image", blob, "camera_capture.jpg");
+      }
+
+      const res = await fetch("/api/spots/recognize", {
+        method: "POST",
+        body: formData
+      });
+      const data = await res.json();
+      if (data && data.subject) {
         setRecognizeResult({
-          subject: preset.subject,
-          story: preset.story,
-          tip: preset.tip,
-          type: preset.type
+          subject: data.subject,
+          story: data.story,
+          tip: data.tip || "建议调整好角度，多拍摄几组细节图。"
         });
       } else {
-        const formData = new FormData();
-        if (file) {
-          formData.append("image", file);
-        } else {
-          const resBlob = await fetch(url);
-          const blob = await resBlob.blob();
-          formData.append("image", blob, "camera_capture.jpg");
-        }
-
-        const res = await fetch("/api/spots/recognize", {
-          method: "POST",
-          body: formData
-        });
-        const data = await res.json();
-        if (data && data.subject) {
-          setRecognizeResult({
-            subject: data.subject,
-            story: data.story,
-            tip: data.tip || "建议调整好角度，多拍摄几组细节图。"
-          });
-        } else {
-          throw new Error("Invalid API response");
-        }
+        throw new Error("Invalid API response");
       }
     } catch {
       setRecognizeResult({
@@ -212,39 +169,7 @@ export default function VRRecognizePage() {
     stopCamera();
 
     // 直接用本地变量触发识别，避免等待状态更新
-    runRecognition(dataUrl, file, null);
-  };
-
-  // Trigger presets selection
-  const selectPreset = (preset: typeof PRESETS[0]) => {
-    stopAudioPlayback();
-    stopCamera();
-    setSelectedPreset(preset);
-    setPreviewUrl(preset.img);
-    setSelectedFile(null);
-    setRecognizeResult(null);
-    setScanStep(0);
-    setScanning(false);
-  };
-
-  // Trigger file selection
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      stopAudioPlayback();
-      stopCamera();
-      setSelectedFile(file);
-      setSelectedPreset(null);
-      setRecognizeResult(null);
-      setScanStep(0);
-      setScanning(false);
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setPreviewUrl(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+    runRecognition(dataUrl, file);
   };
 
   // TTS Speech Reader
@@ -442,7 +367,7 @@ export default function VRRecognizePage() {
                     <div>
                       <h3 className="text-white font-bold text-sm tracking-wide">对准展品或景区建筑拍摄</h3>
                       <p className="text-xs text-[#8C9C90] mt-2 leading-relaxed">
-                        拍照、上传本地照片，或直接点击下方「珍玩预设」，即可开启 3D 拓扑扫描与云端 AI 多模态文化精讲。
+                        打开摄像头对准展品或景区建筑拍摄，即可开启 3D 拓扑扫描与云端 AI 多模态文化精讲。
                       </p>
                     </div>
                   </motion.div>
@@ -489,32 +414,16 @@ export default function VRRecognizePage() {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={startCamera}
-                      className="py-3.5 bg-white/5 hover:bg-white/10 border border-[#D2A053]/40 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 text-[#D2A053] cursor-pointer"
-                    >
-                      <Camera className="w-4 h-4" />
-                      实时相机识别
-                    </button>
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 text-[#C9D4CB] cursor-pointer"
-                    >
-                      <Upload className="w-4 h-4" />
-                      上传本地图片
-                    </button>
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleFileChange}
-                  />
+                  <button
+                    onClick={startCamera}
+                    className="w-full py-3.5 bg-white/5 hover:bg-white/10 border border-[#D2A053]/40 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 text-[#D2A053] cursor-pointer"
+                  >
+                    <Camera className="w-4 h-4" />
+                    实时相机识别
+                  </button>
                   {previewUrl && (
                     <button
-                      onClick={() => runRecognition(previewUrl, selectedFile, selectedPreset)}
+                      onClick={() => runRecognition(previewUrl, selectedFile)}
                       disabled={scanning}
                       className="w-full py-3.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all active:scale-95 text-black disabled:opacity-40 disabled:cursor-not-allowed bg-gradient-to-r from-[#D2A053] to-[#C39A5D] hover:brightness-110 shadow-lg cursor-pointer"
                     >
@@ -538,54 +447,6 @@ export default function VRRecognizePage() {
                   )}
                 </>
               )}
-            </div>
-
-            {/* Presets */}
-            <div className="space-y-2.5 mt-1">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs text-[#D2A053] font-bold tracking-wide">
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>珍玩预设 · 一键体验</span>
-                </div>
-                <span className="text-[10px] text-[#7F8F83]">无需上传照片</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2.5">
-                {PRESETS.map((p) => {
-                  const active = selectedPreset?.id === p.id;
-                  return (
-                    <div
-                      key={p.id}
-                      onClick={() => selectPreset(p)}
-                      className={`group cursor-pointer rounded-2xl overflow-hidden border transition-all duration-300 ${
-                        active
-                          ? "border-[#D2A053] ring-1 ring-[#D2A053]/60 bg-white/5 shadow-lg shadow-black/30"
-                          : "border-white/10 bg-[#121A15]/60 hover:border-white/25"
-                      }`}
-                    >
-                      <div className="relative h-16 w-full overflow-hidden bg-neutral-900">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={p.img}
-                          alt={p.name}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                        <span className="absolute top-1.5 left-1.5 bg-black/70 text-[#D2A053] border border-[#D2A053]/25 text-[7px] px-1.5 py-0.5 rounded font-mono">
-                          {p.type}
-                        </span>
-                        {active && (
-                          <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-[#D2A053] text-black flex items-center justify-center text-[8px] font-black">
-                            ✓
-                          </span>
-                        )}
-                      </div>
-                      <div className="px-2 py-2 text-center bg-black/20">
-                        <span className="text-[10px] font-bold text-white truncate block">{p.name}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
           </section>
 
@@ -705,7 +566,7 @@ export default function VRRecognizePage() {
                       {/* Structured meta tiles */}
                       <div className="grid grid-cols-3 gap-2">
                         {[
-                          { icon: ImageIcon, label: "识别对象", value: recognizeResult.type ? "馆藏珍玩" : "实景景物" },
+                          { icon: ImageIcon, label: "识别对象", value: recognizeResult.type ? "馆藏文物" : "实景景物" },
                           { icon: ScanLine, label: "研判方式", value: "3D 拓扑" },
                           { icon: BookOpen, label: "解读来源", value: "文化图谱" },
                         ].map(({ icon: Icon, label, value }) => (
@@ -788,7 +649,7 @@ export default function VRRecognizePage() {
                           发送至 AI 导游对话框
                         </motion.button>
                         <button
-                          onClick={() => previewUrl && runRecognition(previewUrl, selectedFile, selectedPreset)}
+                          onClick={() => previewUrl && runRecognition(previewUrl, selectedFile)}
                           className="py-3.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 text-[#C9D4CB] bg-white/5 hover:bg-white/10 border border-white/10 transition-all cursor-pointer"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
@@ -809,7 +670,7 @@ export default function VRRecognizePage() {
                       <div className="space-y-1.5 max-w-[240px]">
                         <h4 className="text-xs font-bold text-[#C9D4CB]">暂无识别报告</h4>
                         <p className="text-[11px] leading-relaxed text-[#7F8F83]">
-                          在左侧拍照、上传图片，或选择一个珍玩预设，小玉将即刻生成结构化文化解读。
+                          在左侧打开摄像头拍摄展品或景物，小玉将即刻生成结构化文化解读。
                         </p>
                       </div>
                       <div className="flex flex-wrap justify-center gap-1.5">

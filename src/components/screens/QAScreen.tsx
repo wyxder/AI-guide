@@ -154,6 +154,14 @@ export function QAScreen() {
     media.addEventListener("change", listener);
     return () => media.removeEventListener("change", listener);
   }, []);
+  // 视口高度：用于让数字人形象自适应可用空间，避免被聊天面板遮挡
+  const [viewportH, setViewportH] = useState(800);
+  useEffect(() => {
+    const onResize = () => setViewportH(window.innerHeight);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
@@ -172,8 +180,8 @@ export function QAScreen() {
     const timer = window.setInterval(() => setRecordSeconds((s) => s + 1), 1000);
     return () => window.clearInterval(timer);
   }, [recording]);
-  // 语音合成默认关闭：AI 回复直接文本返回，降低响应时延；用户主动开启后才调用 TTS
-  const [ttsEnabled, setTtsEnabled] = useState(false);
+  // 语音播报默认开启，用户可手动关闭
+  const [ttsEnabled, setTtsEnabled] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
   const [showSatisfaction, setShowSatisfaction] = useState(false);
   const [chatExpanded, setChatExpanded] = useState(true);
@@ -1171,6 +1179,11 @@ export function QAScreen() {
     </div>
   );
 
+  // 数字人可用高度：预留顶部导航、底部输入区与展开的聊天面板，保证形象完整且不被遮挡
+  const chatPanelH = chatExpanded ? Math.round(viewportH * 0.42) : 0;
+  const heroAvailable = Math.max(200, viewportH - 64 - 136 - chatPanelH - 16);
+  const heroScale = Math.min(1, heroAvailable / 540);
+
   return (
     <>
       {/* ══════════════════════════════════════════════
@@ -1345,7 +1358,13 @@ export function QAScreen() {
               <Sparkles className="w-3 h-3" />当前聚焦：<strong>{spotName}</strong>
             </motion.div>
           )}
-          {!isDesktop && <DigitalAvatar state={avatarState} size="hero" audioElement={audioRef.current} avatarStyle={selectedStyle} />}
+          {!isDesktop && (
+            <div className="flex justify-center overflow-hidden" style={{ height: heroAvailable }}>
+              <div style={{ transform: `scale(${heroScale})`, transformOrigin: "top center" }}>
+                <DigitalAvatar state={avatarState} size="hero" audioElement={audioRef.current} avatarStyle={selectedStyle} />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Chat drawer — fully transparent, no background mask */}

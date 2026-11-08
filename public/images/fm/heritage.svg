@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7C2E3E"/><stop offset="100%" stop-color="#C9795A"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="42%" r="65%">
+      <stop offset="0%" stop-color="#F0C987" stop-opacity=".22"/>
+      <stop offset="100%" stop-color="#F0C987" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="veil" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="45%" stop-color="#7C2E3E" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#10100E" stop-opacity=".62"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="600" fill="url(#bg)"/>
+  <rect width="600" height="600" fill="url(#glow)"/>
+  <g><path d="M-80 600 Q130 330 160 60" fill="none" stroke="#F0C987" stroke-width="1.1" opacity=".30"/><path d="M-34 600 Q142 322 206 60" fill="none" stroke="#F0C987" stroke-width="1.1" opacity=".30"/><path d="M12 600 Q154 314 252 60" fill="none" stroke="#F0C987" stroke-width="1.1" opacity=".30"/><path d="M58 600 Q166 306 298 60" fill="none" stroke="#F0C987" stroke-width="1.1" opacity=".30"/><path d="M104 600 Q178 298 344 60" fill="none" stroke="#F0C987" stroke-width="1.1" opacity=".30"/><path d="M150 600 Q190 290 390 60" fill="none" stroke="#F0C987" stroke-width="1.1" opacity=".30"/><path d="M196 600 Q202 282 436 60" fill="none" stroke="#F0C987" stroke-width="1.1" opacity=".30"/><path d="M242 600 Q214 274 482 60" fill="none" stroke="#F0C987" stroke-width="1.1" opacity=".30"/><path d="M288 600 Q226 266 528 60" fill="none" stroke="#F0C987" stroke-width="1.1" opacity=".30"/><path d="M334 600 Q238 258 574 60" fill="none" stroke="#F0C987" stroke-width="1.1" opacity=".30"/><path d="M380 600 Q250 250 620 60" fill="none" stroke="#F0C987" stroke-width="1.1" opacity=".30"/><path d="M426 600 Q262 242 666 60" fill="none" stroke="#F0C987" stroke-width="1.1" opacity=".30"/><path d="M472 600 Q274 234 712 60" fill="none" stroke="#F0C987" stroke-width="1.1" opacity=".30"/><path d="M518 600 Q286 226 758 60" fill="none" stroke="#F0C987" stroke-width="1.1" opacity=".30"/><path d="M564 600 Q298 218 804 60" fill="none" stroke="#F0C987" stroke-width="1.1" opacity=".30"/><path d="M610 600 Q310 210 850 60" fill="none" stroke="#F0C987" stroke-width="1.1" opacity=".30"/><path d="M-80 70 Q300 230 680 110" fill="none" stroke="#F0C987" stroke-width=".8" opacity=".22"/><path d="M-80 112 Q300 244 680 152" fill="none" stroke="#F0C987" stroke-width=".8" opacity=".22"/><path d="M-80 154 Q300 258 680 194" fill="none" stroke="#F0C987" stroke-width=".8" opacity=".22"/><path d="M-80 196 Q300 272 680 236" fill="none" stroke="#F0C987" stroke-width=".8" opacity=".22"/><path d="M-80 238 Q300 286 680 278" fill="none" stroke="#F0C987" stroke-width=".8" opacity=".22"/><path d="M-80 280 Q300 300 680 320" fill="none" stroke="#F0C987" stroke-width=".8" opacity=".22"/><path d="M-80 322 Q300 314 680 362" fill="none" stroke="#F0C987" stroke-width=".8" opacity=".22"/><path d="M-80 364 Q300 328 680 404" fill="none" stroke="#F0C987" stroke-width=".8" opacity=".22"/><path d="M-80 406 Q300 342 680 446" fill="none" stroke="#F0C987" stroke-width=".8" opacity=".22"/><path d="M-80 448 Q300 356 680 488" fill="none" stroke="#F0C987" stroke-width=".8" opacity=".22"/><path d="M-80 490 Q300 370 680 530" fill="none" stroke="#F0C987" stroke-width=".8" opacity=".22"/><path d="M-80 532 Q300 384 680 572" fill="none" stroke="#F0C987" stroke-width=".8" opacity=".22"/><path d="M-80 574 Q300 398 680 614" fill="none" stroke="#F0C987" stroke-width=".8" opacity=".22"/></g>
+  <rect width="600" height="600" fill="url(#veil)"/>
+  <rect x="26" y="26" width="548" height="548" fill="none" stroke="#F0C987" stroke-width="1" opacity=".38"/>
+  <rect x="34" y="34" width="532" height="532" fill="none" stroke="#F0C987" stroke-width=".5" opacity=".22"/>
+  <text x="58" y="76" fill="#F0C987" font-size="15" letter-spacing="5" opacity=".9"
+        font-family="Arial, Helvetica, sans-serif">TRAVELER FM  ·  伴游FM</text>
+  <line x1="58" y1="92" x2="542" y2="92" stroke="#F0C987" stroke-width="1" opacity=".38"/>
+  <text x="300" y="330" text-anchor="middle" fill="#FFF9EE" font-size="66" font-weight="700"
+        letter-spacing="10" font-family="Noto Serif SC, Songti SC, STSong, SimSun, serif">锦绣蜀韵</text>
+  <text x="300" y="374" text-anchor="middle" fill="#F0C987" font-size="15" letter-spacing="6"
+        font-family="Arial, Helvetica, sans-serif" opacity=".92">BROCADE OF SHU</text>
+  <line x1="240" y1="404" x2="360" y2="404" stroke="#F0C987" stroke-width="1" opacity=".6"/>
+  <text x="58" y="548" fill="#F0C987" font-size="17" letter-spacing="3"
+        font-family="Arial, Helvetica, sans-serif">NO.01</text>
+  <text x="542" y="548" text-anchor="end" fill="#F0C987" font-size="17" letter-spacing="2"
+        font-family="Arial, Helvetica, sans-serif">00:28</text>
+</svg>

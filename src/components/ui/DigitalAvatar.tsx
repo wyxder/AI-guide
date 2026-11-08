@@ -540,7 +540,10 @@ function DigitalAvatarComponent({ state, size = "md", audioElement, avatarStyle 
           animate={state === "speaking" ? { y: [0, -3, 0] } : { y: 0 }}
           transition={{ duration: 1.3, repeat: state === "speaking" ? Infinity : 0, ease: "easeInOut" }}>
           {isXingyun ? (
-            <XingyunAvatar height={avatarHeight} profile={isXiaomei ? "xiaomei" : "shixian"} />
+            <XingyunAvatar
+              height={avatarHeight}
+              profile={isXiaomei ? "xiaomei" : "shixian"}
+            />
           ) : isLive2D ? (
             <Live2DViewer avatarStyle={avatarStyle} />
           ) : isUrl ? (
