@@ -5,7 +5,7 @@ import {
   Compass, ArrowRight, Loader2, MapPin, Clock, ChevronLeft, ChevronRight,
   Share2, MessageSquare, ShieldAlert, Award, Search, Send,
   Volume2, VolumeX, Eye, BookOpen, Navigation, Landmark, Sparkles,
-  X, Smile, Image as ImageIcon, Film, Mic, Menu, Bot, User
+  X, Smile, Image as ImageIcon, Film, Mic, Menu, Bot, User, Glasses
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -263,6 +263,10 @@ export function RoutesScreen() {
   const [showRightSidebar, setShowRightSidebar] = useState(false);
   const [showArtifactsDrawer, setShowArtifactsDrawer] = useState(false);
 
+  // VR 720° 全景漫游
+  const [showVrPanorama, setShowVrPanorama] = useState(false);
+  const [vrLoading, setVrLoading] = useState(true);
+
   // AI Chat Panel
   const [chatMessages, setChatMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([
     { role: "assistant", content: "您好！我是您的智能导览助手小慧。已为您定位至重庆核心景区。想了解哪些景点的门票、历史和特色，或者让我为您定制路线？" }
@@ -300,6 +304,16 @@ export function RoutesScreen() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Lock page scroll while the VR panorama modal is open
+  useEffect(() => {
+    if (!showVrPanorama) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [showVrPanorama]);
 
   // Map elements
   const mapRef = useRef<HTMLDivElement>(null);
@@ -1118,7 +1132,7 @@ export function RoutesScreen() {
   };
 
   return (
-    <div className="relative w-full h-[100dvh] flex flex-col overflow-hidden bg-[#F7F6F3] select-none text-zinc-800">
+    <div className="relative w-full h-[calc(100dvh-64px-env(safe-area-inset-bottom))] md:h-[100dvh] flex flex-col overflow-hidden bg-[#F7F6F3] select-none text-zinc-800">
       
       {/* Hidden File Inputs for AI chat attachments */}
       <input
@@ -1196,7 +1210,7 @@ export function RoutesScreen() {
         {/* COLUMN 1: LEFT SIDEBAR (City switch, routes, spots list) */}
         <div className={`
           bg-white border-zinc-200/80 flex flex-col p-4 space-y-5 flex-shrink-0 shadow-lg z-30 transition-all duration-300
-          ${isMobile ? 'absolute top-0 bottom-[calc(60px+env(safe-area-inset-bottom))] left-0 w-[290px]' : 'w-[320px] border-r'}
+          ${isMobile ? 'absolute top-0 bottom-0 left-0 w-[290px]' : 'w-[320px] border-r'}
           ${isMobile && !showLeftSidebar ? '-translate-x-full' : 'translate-x-0'}
         `}>
           <div className="pb-1 border-b border-zinc-100 flex items-center justify-between">
@@ -1457,6 +1471,18 @@ export function RoutesScreen() {
             >
               <span className="font-black text-xs px-1.5 py-0.5 rounded-md bg-white text-[#2563EB] shadow-xs select-none">AI</span>
             </button>
+
+            <button
+              onClick={() => {
+                setVrLoading(true);
+                setShowVrPanorama(true);
+              }}
+              className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#4F46E5] text-white shadow-lg shadow-violet-500/30 border border-violet-400 flex items-center justify-center font-bold hover:from-[#6D28D9] hover:to-[#4338CA] active:scale-95 transition-all cursor-pointer"
+              title="VR 720° 全景漫游"
+              aria-label="打开 VR 720° 全景漫游"
+            >
+              <span className="font-black text-xs px-1.5 py-0.5 rounded-md bg-white text-[#6D28D9] shadow-xs select-none">VR</span>
+            </button>
           </div>
 
           {/* Draggable Float AI Assistant Panel (Positioned in bottom-right corner, 360° drag) */}
@@ -1586,7 +1612,7 @@ export function RoutesScreen() {
         {isMobile && (
           <div className={`
             bg-white border-zinc-200/80 flex flex-col overflow-hidden shadow-lg z-30 transition-all duration-300
-            absolute top-0 bottom-[calc(60px+env(safe-area-inset-bottom))] right-0 w-[300px]
+            absolute top-0 bottom-0 right-0 w-[300px]
             ${!showRightSidebar ? 'translate-x-full' : 'translate-x-0'}
           `}>
             <div className="p-4 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50 flex-shrink-0">
@@ -2012,6 +2038,71 @@ export function RoutesScreen() {
                     </div>
                   );
                 })()}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* VR 720° Panorama Modal */}
+      <AnimatePresence>
+        {showVrPanorama && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowVrPanorama(false)}
+            className="fixed inset-0 z-[140] flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.94, opacity: 0, y: 18 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.94, opacity: 0, y: 18 }}
+              transition={{ type: "spring", stiffness: 300, damping: 28 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-5xl h-[85dvh] sm:h-[80vh] max-h-[900px] rounded-2xl sm:rounded-3xl bg-[#0F1412] border border-white/15 shadow-2xl flex flex-col overflow-hidden"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 sm:px-5 border-b border-white/10 flex-shrink-0">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-violet-500/15 border border-violet-400/40 flex items-center justify-center flex-shrink-0">
+                    <Glasses className="w-4.5 h-4.5 text-violet-300" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-extrabold text-sm text-white tracking-wide" style={{ fontFamily: "var(--font-noto-serif)" }}>
+                      VR 720° 全景漫游
+                    </h3>
+                    <p className="text-[10px] text-white/50 mt-0.5 truncate">拖动画面或滑动屏幕，环视景区实景</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowVrPanorama(false)}
+                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/70 hover:text-white transition-colors cursor-pointer flex-shrink-0"
+                  aria-label="关闭 VR 全景"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Panorama iframe */}
+              <div className="relative flex-1 min-h-0 bg-black">
+                {vrLoading && (
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[#0F1412] text-white">
+                    <Loader2 className="w-6 h-6 animate-spin text-violet-300" />
+                    <span className="text-xs text-white/60">正在加载 VR 全景场景…</span>
+                  </div>
+                )}
+                <iframe
+                  src="https://0cbfzbxod.wasee.com/m/0cbfzbxod"
+                  name="waseePanorama"
+                  title="VR 720° 全景漫游"
+                  loading="eager"
+                  allow="accelerometer; gyroscope; magnetometer; xr-spatial-tracking; fullscreen"
+                  allowFullScreen
+                  scrolling="no"
+                  onLoad={() => setVrLoading(false)}
+                  className="absolute inset-0 w-full h-full border-0"
+                />
               </div>
             </motion.div>
           </motion.div>
