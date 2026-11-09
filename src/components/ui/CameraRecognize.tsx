@@ -1,64 +1,24 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Camera, 
-  Upload, 
   Sparkles, 
   ChevronLeft, 
   Volume2, 
   VolumeX, 
   Loader2, 
-  RefreshCw, 
   Compass, 
   HelpCircle,
-  Eye,
   Info,
   X
 } from "lucide-react";
 
 const SPRING = { type: "spring" as const, stiffness: 280, damping: 35 };
 
-// Curated presets with gorgeous images and cultural stories
-const PRESETS = [
-  {
-    id: 1,
-    name: "三星堆青铜神树",
-    type: "国家一级文物",
-    img: "/images/spots/sanxingdui-bronze-tree.webp",
-    subject: "三星堆一号青铜神树",
-    story: "此神树高达3.96米，分为三层，每层三枝，共九枝，每枝上伫立一只昂首的神鸟。它完美反映了古蜀先民对太阳及“十日传说”的自然崇拜。神树上蜿蜒盘绕的青铜巨龙，更揭示了古蜀文化与中原文明之间源远流长、血脉相连的深刻纽带，是中华文明多元一体格局的重要实证。",
-    tip: "建议从斜下方仰视拍摄，配合展厅内部 of the 聚焦光影，能完美凸显神树的宏伟气势与古蜀文明的神秘色彩。"
-  },
-  {
-    id: 2,
-    name: "唐代彩绘陶侍女俑",
-    type: "盛唐彩塑精粹",
-    img: "/image/tang_pottery_lady.webp",
-    subject: "大唐彩绘陶侍女俑",
-    story: "陶俑面庞饱满红润，发髻高耸，身着红绿相间的宽袖长裙，体态丰腴自然。其神态安详而自信，衣纹褶皱自然流畅，完美再现了盛唐时期“大唐气象”的包容性与自信丰神，体现了当时手工业雕塑艺术的极高水平，将历史的温度刻画进泥土之中。",
-    tip: "适合近距离对焦拍摄面部细节与衣服残存的彩绘色彩，拍照时尽量让镜头贴近玻璃以避开反光。"
-  },
-  {
-    id: 3,
-    name: "洪崖洞吊脚楼",
-    type: "巴渝民俗地标",
-    img: "/images/spots/10011.webp",
-    subject: "洪崖洞民俗风貌区吊脚楼群",
-    story: "洪崖洞以巴渝传统建筑“吊脚楼”风貌为主体，依山就势，沿江而建。层层叠叠的木质吊脚楼在现代摩天大楼的映衬下显得格外独特，展示了山城重庆“依山筑屋、临江托阁”的魔幻地貌与巴渝先民的建筑智慧，变陡峭悬崖为生活长卷。",
-    tip: "推荐在傍晚18:30点灯时分，从侧下方的千厮门大桥引桥上远眺拍摄全景，或者在崖底街道仰拍，最具有魔幻山城的视觉冲击力。"
-  },
-  {
-    id: 4,
-    name: "武侯祠红墙竹影",
-    type: "三国蜀汉遗迹",
-    img: "/images/spots/10061.webp",
-    subject: "武侯祠红墙夹道与惠陵",
-    story: "这道夹在汉昭烈庙与惠陵之间的粉红墙通道，红色的粉墙与挺拔 of the 翠竹交相辉映，竹影随风斑驳。厚重温润的历史朱红墙面与翠竹的清幽静谧完美融合，形成了武侯祠最具代表性的“红墙夹道”景观，诉说着三国蜀汉文化的深邃底蕴与君臣合祀的千古佳话。",
-    tip: "利用透视原理站在夹道中央，等待阳光穿过竹叶在红墙上留下斑驳光影时按下快门，静谧的古风意境绝佳。"
-  }
-];
+// 声像频谱条的固定高度，避免在渲染期间使用随机数
+const AUDIO_WAVE_HEIGHTS = [8, 18, 10, 22, 12, 20, 9, 16];
 
 interface CameraRecognizeProps {
   currentSpot?: string;
@@ -69,15 +29,15 @@ interface CameraRecognizeProps {
 }
 
 export function CameraRecognize({ currentSpot, autoStartCamera = false, onClose, onRecognized }: CameraRecognizeProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const fallbackInputRef = useRef<HTMLInputElement>(null);
   
   // Interaction states
-  const [selectedPreset, setSelectedPreset] = useState<typeof PRESETS[0] | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [cameraLoading, setCameraLoading] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   
@@ -92,71 +52,103 @@ export function CameraRecognize({ currentSpot, autoStartCamera = false, onClose,
   // Audio narration state
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [audioInstance, setAudioInstance] = useState<HTMLAudioElement | null>(null);
-  
-  // Trigger presets selection
-  const selectPreset = (preset: typeof PRESETS[0]) => {
-    if (audioInstance) {
-      audioInstance.pause();
-      setIsPlayingAudio(false);
-    }
-    setSelectedPreset(preset);
-    setPreviewUrl(preset.img);
-    setSelectedFile(null);
+
+  const stopCamera = useCallback(() => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    setCameraStream(null);
+    setCameraActive(false);
+  }, []);
+
+  /** 系统相机兜底：非 HTTPS / 浏览器不支持 getUserMedia 时，直接唤起手机系统相机拍照 */
+  const handleFallbackCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    stopCamera();
+    setCameraError(null);
+    setSelectedFile(file);
     setRecognizeResult(null);
     setScanStep(0);
     setScanning(false);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setPreviewUrl(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
-  // Trigger file selection
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (audioInstance) {
-        audioInstance.pause();
-        setIsPlayingAudio(false);
-      }
-      setSelectedFile(file);
-      setSelectedPreset(null);
-      setRecognizeResult(null);
-      setScanStep(0);
-      setScanning(false);
+  /** 把当前视频流挂到 video 元素上（元素可能因动画延迟挂载，因此 ref 与 effect 双保险） */
+  const bindStreamToVideo = useCallback((node: HTMLVideoElement | null) => {
+    videoRef.current = node;
+    const stream = streamRef.current;
+    if (!node || !stream) return;
+    if (node.srcObject !== stream) {
+      node.srcObject = stream;
+    }
+    node.play().catch(() => undefined);
+  }, []);
 
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setPreviewUrl(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+  const describeCameraError = (err: unknown) => {
+    const name = (err as DOMException)?.name;
+    switch (name) {
+      case "NotAllowedError":
+      case "SecurityError":
+        return "摄像头权限被拒绝，请在浏览器/系统设置中允许访问相机后重试。";
+      case "NotFoundError":
+      case "DevicesNotFoundError":
+        return "未检测到可用摄像头，请检查设备后重试。";
+      case "NotReadableError":
+      case "TrackStartError":
+        return "摄像头正被其他应用占用，请关闭其他相机应用后重试。";
+      case "OverconstrainedError":
+      case "ConstraintNotSatisfiedError":
+        return "当前设备不支持所请求的摄像头参数，请重试。";
+      default:
+        return "无法开启摄像头，请确认使用 HTTPS 访问并允许浏览器访问相机。";
     }
   };
 
-  const stopCamera = () => {
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-    setCameraActive(false);
-  };
-
   const startCamera = async () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
     setCameraError(null);
     setCameraLoading(true);
+
+    // 移动端在非 HTTPS 或浏览器不支持 getUserMedia 时，直接唤起系统相机拍照
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      setCameraLoading(false);
+      setCameraError("当前环境无法直接调用摄像头，已切换为系统相机拍照。");
+      fallbackInputRef.current?.click();
+      return;
+    }
+
     try {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setCameraError("当前浏览器不支持摄像头调用");
-        return;
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false
+        });
+      } catch (err) {
+        // 部分移动端设备无法满足后置摄像头约束（或只有前置摄像头），降级为默认摄像头
+        const name = (err as DOMException)?.name;
+        if (name === "NotAllowedError" || name === "SecurityError") throw err;
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       }
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+
       streamRef.current = stream;
+      setCameraStream(stream);
       setCameraActive(true);
       setPreviewUrl(null);
       setSelectedFile(null);
-      setSelectedPreset(null);
-      requestAnimationFrame(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => undefined);
-        }
-      });
-    } catch {
-      setCameraError("无法获取摄像头权限，请允许浏览器访问相机");
+      setRecognizeResult(null);
+      setScanStep(0);
+      setScanning(false);
+    } catch (err) {
+      setCameraError(describeCameraError(err));
     } finally {
       setCameraLoading(false);
     }
@@ -199,14 +191,7 @@ export function CameraRecognize({ currentSpot, autoStartCamera = false, onClose,
     setScanStep(4);
 
     try {
-      if (selectedPreset) {
-        // Use rich preset content
-        setRecognizeResult({
-          subject: selectedPreset.subject,
-          story: selectedPreset.story,
-          tip: selectedPreset.tip
-        });
-      } else if (selectedFile) {
+      if (selectedFile) {
         // Call backend API for visual recognition
         const formData = new FormData();
         formData.append("image", selectedFile);
@@ -226,7 +211,7 @@ export function CameraRecognize({ currentSpot, autoStartCamera = false, onClose,
           throw new Error("Invalid API response");
         }
       }
-    } catch (err) {
+    } catch {
       // Fallback in case of failure/no net
       setRecognizeResult({
         subject: "已识别的景观文物",
@@ -271,26 +256,37 @@ export function CameraRecognize({ currentSpot, autoStartCamera = false, onClose,
     return () => {
       stopCamera();
     };
-  }, []);
+  }, [stopCamera]);
 
-  const [mounted, setMounted] = useState(false);
+  // 视频元素挂载 / 视频流更新后重新绑定，兼容移动端元素延迟挂载导致的黑屏
   useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
+    const video = videoRef.current;
+    if (!cameraActive || !cameraStream || !video) return;
+    if (video.srcObject !== cameraStream) {
+      video.srcObject = cameraStream;
+    }
+    const tryPlay = () => {
+      video.play().catch(() => undefined);
+    };
+    tryPlay();
+    video.addEventListener("loadedmetadata", tryPlay);
+    return () => {
+      video.removeEventListener("loadedmetadata", tryPlay);
+    };
+  }, [cameraActive, cameraStream]);
 
   // 从 AI 导游输入栏的相机图标进入时，直接唤起摄像头
   useEffect(() => {
-    if (!mounted || !autoStartCamera) return;
+    if (!autoStartCamera) return;
     const timer = window.setTimeout(() => { startCamera(); }, 0);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, autoStartCamera]);
+  }, [autoStartCamera]);
 
-  if (!mounted) return null;
+  if (typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/75 backdrop-blur-md p-4 select-none font-sans overflow-y-auto">
+    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/75 backdrop-blur-md p-3 sm:p-4 select-none font-sans overflow-y-auto overflow-x-hidden">
       {/* Click outside backdrop overlay to close */}
       <div className="absolute inset-0 cursor-pointer" onClick={onClose} />
 
@@ -299,28 +295,29 @@ export function CameraRecognize({ currentSpot, autoStartCamera = false, onClose,
         animate={{ opacity: 1, scale: 1, y: 0 }} 
         exit={{ opacity: 0, scale: 0.92, y: 20 }}
         transition={SPRING}
-        className="relative z-10 w-full max-w-4xl max-h-[85vh] bg-[#121815]/98 text-[#E6EADF] rounded-3xl border border-[#D2A053]/40 flex flex-col overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
+        style={{ maxWidth: "min(64rem, calc(100vw - 1.5rem))" }}
+        className="relative z-10 w-full max-w-5xl max-h-[88vh] bg-[#121815]/98 text-[#E6EADF] rounded-3xl border border-[#D2A053]/40 flex flex-col overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
       >
         {/* ── Top Header (Gold-Jade tech style) ── */}
-        <header className="sticky top-0 z-30 bg-[#1A2520]/95 backdrop-blur-md border-b border-[#D2A053]/20 px-4 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-30 bg-[#1A2520]/95 backdrop-blur-md border-b border-[#D2A053]/20 px-4 py-3.5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <button 
               onClick={onClose}
-              className="w-9 h-9 rounded-xl bg-[#24332C] hover:bg-[#2C3F36] border border-[#D2A053]/30 flex items-center justify-center transition-all text-[#D2A053] active:scale-95 shadow-[0_0_8px_rgba(210,160,83,0.15)]"
+              className="w-9 h-9 shrink-0 rounded-xl bg-[#24332C] hover:bg-[#2C3F36] border border-[#D2A053]/30 flex items-center justify-center transition-all text-[#D2A053] active:scale-95 shadow-[0_0_8px_rgba(210,160,83,0.15)]"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <div>
-              <h1 className="font-extrabold text-sm tracking-widest text-[#D2A053] drop-shadow-[0_0_4px_rgba(210,160,83,0.4)]" style={{ fontFamily: "var(--font-noto-serif)" }}>
+            <div className="min-w-0">
+              <h1 className="font-extrabold text-sm tracking-widest text-[#D2A053] drop-shadow-[0_0_4px_rgba(210,160,83,0.4)] truncate" style={{ fontFamily: "var(--font-noto-serif)" }}>
                 VR3D即拍即识导览
               </h1>
-              <p className="text-[10px] text-[#8F9F8F] font-mono tracking-wider">AI MULTIMODAL VISION RECOGNITION POD</p>
+              <p className="text-[10px] text-[#8F9F8F] font-mono tracking-wider truncate">AI MULTIMODAL VISION RECOGNITION POD</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <span className="w-2 h-2 rounded-full bg-[#D2A053] animate-ping"></span>
-            <span className="text-[10px] font-mono font-bold text-[#D2A053] bg-[#24332C] px-2.5 py-0.5 rounded border border-[#D2A053]/40 shadow-[0_0_6px_rgba(210,160,83,0.15)]">
+            <span className="text-[10px] font-mono font-bold text-[#D2A053] bg-[#24332C] px-2.5 py-0.5 rounded border border-[#D2A053]/40 shadow-[0_0_6px_rgba(210,160,83,0.15)] whitespace-nowrap">
               3D SCANNER V2.0
             </span>
             <button 
@@ -333,7 +330,8 @@ export function CameraRecognize({ currentSpot, autoStartCamera = false, onClose,
         </header>
 
         {/* ── Main Layout (Responsive split panel) ── */}
-        <main className="flex-1 w-full p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start overflow-y-auto">
+        {/* 注意：这里不能用 <main>，全局样式 main{margin-left:240px} 会把弹窗内容整体右移并溢出 */}
+        <div className="flex-1 w-full min-h-0 p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6 items-start overflow-y-auto overflow-x-hidden">
           
           {/* Left Area (Holographic viewfinder & control buttons) */}
           <section className="flex flex-col gap-4 w-full min-w-0">
@@ -358,7 +356,7 @@ export function CameraRecognize({ currentSpot, autoStartCamera = false, onClose,
               <div className="absolute inset-0 bg-[linear-gradient(rgba(210,160,83,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(210,160,83,0.03)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
 
               {/* Content Switch */}
-              <AnimatePresence mode="wait">
+              <AnimatePresence>
                 {cameraActive ? (
                   <motion.div
                     key="camera"
@@ -367,7 +365,7 @@ export function CameraRecognize({ currentSpot, autoStartCamera = false, onClose,
                     exit={{ opacity: 0 }}
                     className="absolute inset-0 w-full h-full"
                   >
-                    <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                    <video ref={bindStreamToVideo} autoPlay playsInline muted className="w-full h-full object-cover" />
                     <div className="absolute left-4 bottom-4 right-4 z-20 flex items-center justify-between gap-3">
                       <span className="text-[10px] text-[#D2A053] bg-black/70 border border-[#D2A053]/40 px-3 py-2 rounded-lg">摄像头已开启，对准景物后点击取景识别</span>
                       <button onClick={captureFrame} className="px-4 py-2 rounded-xl text-xs font-black bg-[#D2A053] text-black shadow active:scale-95">取景识别</button>
@@ -418,7 +416,7 @@ export function CameraRecognize({ currentSpot, autoStartCamera = false, onClose,
                     <div>
                       <h3 className="text-white font-bold text-sm tracking-wide">{cameraLoading ? "正在打开摄像头…" : "对准展品或文物拍摄"}</h3>
                       <p className="text-xs text-[#8F9F8F] mt-1.5 leading-relaxed">
-                        上传展品照片或在下方选择“珍玩预设”，小玉即刻为您开启3D拓扑与多模态深度文化解读。
+                        打开摄像头对准展品或文物拍摄，小玉即刻为您开启 3D 拓扑与多模态深度文化解读。
                       </p>
                     </div>
                   </motion.div>
@@ -436,7 +434,7 @@ export function CameraRecognize({ currentSpot, autoStartCamera = false, onClose,
             </div>
 
             {/* Action Trigger Buttons */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={cameraActive ? stopCamera : startCamera}
                 className="py-3 bg-[#1A2520] hover:bg-[#24332C] border border-[#D2A053]/30 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow transition-all active:scale-95 text-[#D2A053] hover:border-[#D2A053]/60 hover:shadow-[0_0_8px_rgba(210,160,83,0.15)]"
@@ -444,20 +442,6 @@ export function CameraRecognize({ currentSpot, autoStartCamera = false, onClose,
                 <Camera className="w-4 h-4 text-[#D2A053]" />
                 <span>{cameraActive ? "关闭摄像头" : "打开摄像头"}</span>
               </button>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="py-3 bg-[#1A2520] hover:bg-[#24332C] border border-[#D2A053]/30 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow transition-all active:scale-95 text-[#D2A053] hover:border-[#D2A053]/60 hover:shadow-[0_0_8px_rgba(210,160,83,0.15)]"
-              >
-                <Upload className="w-4 h-4 text-[#D2A053]" />
-                <span>本地图片</span>
-              </button>
-              <input 
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileChange}
-              />
 
               <button
                 onClick={startScanning}
@@ -477,52 +461,46 @@ export function CameraRecognize({ currentSpot, autoStartCamera = false, onClose,
                 )}
               </button>
             </div>
-            {cameraError && <p className="text-[11px] text-red-300 bg-red-500/10 border border-red-400/20 rounded-xl px-3 py-2">{cameraError}</p>}
-
-            {/* Preset珍玩 selector grid */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-xs text-[#D2A053] font-semibold tracking-wide">
-                <Eye className="w-3.5 h-3.5 text-[#D2A053]" />
-                <span>珍玩预设快捷体验 (无需上传)</span>
+            {cameraError && (
+              <div className="flex items-center justify-between gap-2 text-[11px] text-red-300 bg-red-500/10 border border-red-400/20 rounded-xl px-3 py-2">
+                <span className="min-w-0 break-words">{cameraError}</span>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <button
+                    onClick={() => fallbackInputRef.current?.click()}
+                    className="px-2.5 py-1 rounded-lg border border-red-400/30 text-red-200 hover:bg-red-500/20 active:scale-95 transition-all"
+                  >
+                    系统相机
+                  </button>
+                  <button
+                    onClick={startCamera}
+                    className="px-2.5 py-1 rounded-lg border border-red-400/30 text-red-200 hover:bg-red-500/20 active:scale-95 transition-all"
+                  >
+                    重试
+                  </button>
+                </div>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                {PRESETS.map((p) => {
-                  const active = selectedPreset?.id === p.id;
-                  return (
-                    <div
-                      key={p.id}
-                      onClick={() => selectPreset(p)}
-                      className={`group cursor-pointer rounded-xl overflow-hidden border transition-all duration-300 ${active ? 'border-[#D2A053] ring-2 ring-[#D2A053]/40 shadow-[0_0_15px_rgba(210,160,83,0.35)]' : 'border-[#24332C] hover:border-[#D2A053]/40'}`}
-                      style={{ background: "#1A2520" }}
-                    >
-                      <div className="h-16 w-full overflow-hidden bg-neutral-900 relative">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={p.img} alt={p.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                        <div className="absolute inset-0 bg-black/30" />
-                        <span className="absolute top-1 left-1 bg-[#121815]/80 text-[#D2A053] border border-[#D2A053]/30 text-[7px] px-1 rounded-sm leading-none py-0.5 font-mono">
-                          {p.type}
-                        </span>
-                      </div>
-                      <div className="p-2 text-center">
-                        <span className="text-[10px] font-black text-white truncate block">{p.name}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            )}
+            {/* 移动端系统相机兜底（不展示“本地图片”按钮，仅在相机不可用时触发） */}
+            <input
+              ref={fallbackInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleFallbackCapture}
+            />
           </section>
 
           {/* Right Area (AI Deep cultural narrative panel) */}
           <section className="flex flex-col w-full min-w-0">
             
-            <div className="flex-grow bg-[#1A2520]/95 rounded-2xl border border-[#D2A053]/20 p-5 flex flex-col justify-between shadow-lg relative overflow-hidden">
+            <div className="flex-grow w-full min-w-0 bg-[#1A2520]/95 rounded-2xl border border-[#D2A053]/20 p-5 flex flex-col justify-between shadow-lg relative overflow-hidden">
               
               {/* Dynamic Glassmorphic Backdrop Decoration */}
               <div className="absolute -top-16 -right-16 w-36 h-36 bg-[#D2A053]/10 rounded-full blur-2xl pointer-events-none" />
               
               {/* Top Log/Results */}
-              <div className="space-y-4 flex-1 overflow-y-auto pr-1 max-h-[56vh] lg:max-h-[64vh]">
+              <div className="space-y-4 flex-1 min-w-0 overflow-y-auto overflow-x-hidden pr-1 max-h-[56vh] lg:max-h-[64vh]">
                 <div className="flex items-center justify-between pb-3 border-b border-[#D2A053]/20">
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#D2A053] animate-pulse" />
@@ -631,7 +609,7 @@ export function CameraRecognize({ currentSpot, autoStartCamera = false, onClose,
                               key={i} 
                               className={`w-[2.5px] bg-[#D2A053] rounded-full transition-all duration-300 ${isPlayingAudio ? 'animate-pulse' : ''}`}
                               style={{ 
-                                height: isPlayingAudio ? `${Math.floor(Math.random() * 18) + 6}px` : "4px",
+                                height: isPlayingAudio ? `${AUDIO_WAVE_HEIGHTS[i - 1] ?? 10}px` : "4px",
                                 animationDelay: `${i * 120}ms`
                               }}
                             />
@@ -659,8 +637,8 @@ export function CameraRecognize({ currentSpot, autoStartCamera = false, onClose,
                       className="h-64 flex flex-col items-center justify-center text-center p-6 gap-3 text-zinc-500"
                     >
                       <HelpCircle className="w-10 h-10 text-zinc-700" />
-                      <p className="text-[11px] leading-relaxed text-[#8F9F8F]">
-                        暂无研判报告。请先在左侧拍摄/上传珍玩照片，或点击“珍玩预设”直接查看识别分析。
+                      <p className="text-[11px] leading-relaxed text-[#8F9F8F] break-words">
+                        暂无研判报告。请先打开摄像头拍摄展品或景物，小玉将即刻生成结构化文化解读。
                       </p>
                     </motion.div>
                   )}
@@ -677,7 +655,7 @@ export function CameraRecognize({ currentSpot, autoStartCamera = false, onClose,
             </div>
           </section>
 
-        </main>
+        </div>
       </motion.div>
     </div>,
     document.body

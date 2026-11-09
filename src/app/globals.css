@@ -1047,4 +1047,9 @@ script[data-nf-variant] {
 }
 .tech-marquee:hover { animation-play-state: paused; }
 
+/* 魔珐星云 SDK 自带字幕：统一关闭，改用站内对话气泡 */
+.xingyun-avatar-stage .avatar-sdk-widget-container {
+  display: none !important;
+}
+
 

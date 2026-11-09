@@ -2,9 +2,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Mic, Send, Volume2, VolumeX,
+  Send, Volume2, VolumeX,
   History, X, ChevronUp, ChevronDown, Camera, Sparkles,
-  Image as ImageIcon, User, Plus, Check
+  Image as ImageIcon, User, Plus, Check, Phone, Video, VideoOff
 } from "lucide-react";
 import { request } from "@/lib/api/request";
 import { useSearchParams } from "next/navigation";
@@ -12,10 +12,14 @@ import { SatisfactionModal } from "@/components/ui/SatisfactionModal";
 import { DigitalAvatar, type AvatarState } from "@/components/ui/DigitalAvatar";
 import { AvatarSelectorModal } from "@/components/ui/AvatarSelectorModal";
 import { CameraRecognize } from "@/components/ui/CameraRecognize";
+import { VoiceCallDock, VideoCallPreview } from "@/components/ui/VoiceCallDock";
 import { toast } from "sonner";
 import {
   interruptXingyun,
   speakWithXingyun,
+  startXingyunASR,
+  stopXingyunASR,
+  subscribeXingyunASR,
   subscribeXingyunConversation,
 } from "@/lib/xingyun/agent";
 import { isXingyunAvatarStyle } from "@/lib/xingyun/preset";
@@ -160,6 +164,7 @@ export function QAScreen() {
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [avatarState, setAvatarState] = useState<AvatarState>("idle");
   const [recording, setRecording] = useState(false);
+  const [recognizing, setRecognizing] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
   const voiceStartingRef = useRef(false);
   // 语音识别提示统一使用固定 id，保证界面上同时只存在一条提示
@@ -179,6 +184,10 @@ export function QAScreen() {
   const [showSatisfaction, setShowSatisfaction] = useState(false);
   const [chatExpanded, setChatExpanded] = useState(true);
   const [showCamera, setShowCamera] = useState(false);
+  // 语音通话（微信风格全屏通话界面），通话中隐藏输入区
+  const [inCall, setInCall] = useState(false);
+  // 视频聊天开关：默认开启（通话中显示摄像头小窗），可点击关闭
+  const [videoChatEnabled, setVideoChatEnabled] = useState(true);
   const [subtitle, setSubtitle] = useState(initMsg(spotName).content);
   const satisfactionShownRef = useRef(false);
   const mobileBottomRef = useRef<HTMLDivElement>(null);
@@ -202,10 +211,17 @@ export function QAScreen() {
   };
 
   // Audio playback and recording refs
-  const recognitionRef = useRef<any>(null);
-  const recognitionManualStopRef = useRef(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  // 通话录音（静音自动结束 + SiliconFlow TeleSpeechASR）
+  const callSessionRef = useRef<{
+    recorder: MediaRecorder;
+    stream: MediaStream;
+    ctx?: AudioContext;
+    raf: number;
+    stopped: boolean;
+  } | null>(null);
+  const abortVoiceRef = useRef(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const stopAudio = () => {
@@ -431,6 +447,31 @@ export function QAScreen() {
     });
   }, [isStarcloudAvatar]);
 
+  // 「诗仙 / 小美」：使用星云自带 ASR，识别完成自动发送气泡
+  const xingyunListeningRef = useRef(false);
+  const sendMessageRef = useRef<(q: string) => void>(() => {});
+  useEffect(() => {
+    sendMessageRef.current = sendMessage as unknown as (q: string) => void;
+  });
+  useEffect(() => {
+    if (!isStarcloudAvatar) return;
+    return subscribeXingyunASR((result) => {
+      if (!xingyunListeningRef.current) return;
+      const text = (result?.text || "").trim();
+      if (!text) return;
+      setInput(text);
+      if (result.isFinal) {
+        xingyunListeningRef.current = false;
+        setRecording(false);
+        stopXingyunASR();
+        // 星云识别为实时结果：短暂展示识别完成进度再发送气泡
+        setRecognizing(true);
+        sendMessageRef.current(text);
+        window.setTimeout(() => setRecognizing(false), 700);
+      }
+    });
+  }, [isStarcloudAvatar]);
+
   const [avatarWidth, setAvatarWidth] = useState(450); // Default to a wider layout (450px)
   const panelRef = useRef<HTMLDivElement>(null);
   const isResizingRef = useRef(false);
@@ -468,9 +509,32 @@ export function QAScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleMouseMove]);
 
+  /* ── 语音通话（微信风格）── */
+  const startCall = () => {
+    triggerHaptic(20);
+    setShowBgMenu(false);
+    setShowVoiceMenu(false);
+    setShowPersonaMenu(false);
+    setInCall(true);
+  };
+
+  const endCall = () => {
+    stopAudio();
+    abortVoiceRef.current = true;
+    if (callSessionRef.current) {
+      try { callSessionRef.current.recorder.stop(); } catch { cleanupCallSession(); }
+    }
+    setRecording(false);
+    setRecognizing(false);
+    setInCall(false);
+  };
+
+  const callGreeting = () => {
+    speak("您好，我是旅行家小玉，很高兴和您通话！想了解景区什么问题，直接说就行～", true);
+  };
+
   const handleNewChat = async () => {
     stopAudio();
-
     // Save current conversation to history if user has messages
     if (messages.length > 1) {
       try {
@@ -675,8 +739,8 @@ export function QAScreen() {
   };
 
   const speak = async (text: string, force = false) => {
-    // 默认静音：AI 回复仅文本返回，不调用语音合成，保证低时延
-    if (!ttsEnabled && !force) return;
+    // 默认静音：AI 回复仅文本返回，不调用语音合成，保证低时延；通话中始终开启语音
+    if (!ttsEnabled && !force && !inCall) return;
     stopAudio();
 
     const cleanedText = text.replace(/\[情感[:：][^\]]+\]/g, "").trim();
@@ -727,140 +791,185 @@ export function QAScreen() {
     }
   };
 
-  const startMediaRecorderFallback = async () => {
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        toast.error("当前浏览器暂不支持麦克风录音");
-        setInput("（浏览器不支持录音）");
-        return;
-      }
-      toast.loading("正在开启麦克风…", { id: VOICE_TOAST_ID, duration: 8000 });
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      toast.success("正在录音，再次点击按钮结束并发送", { id: VOICE_TOAST_ID, duration: 2500 });
-
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      recognitionRef.current = null;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach((track) => track.stop());
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        const formData = new FormData();
-        formData.append("file", audioBlob, "audio.webm");
-
-        setInput("正在识别语音...");
-        toast.loading("正在识别您的语音...", { id: VOICE_TOAST_ID, duration: 12000 });
-        try {
-          const res = await request("/api/qa/stt", {
-            method: "POST",
-            body: formData,
-          });
-          const data = await res.json();
-          toast.dismiss(VOICE_TOAST_ID);
-          if (data.text) {
-            setInput(data.text);
-            sendMessage(data.text);
-          } else {
-            toast.error("未识别到清晰语音", { id: VOICE_TOAST_ID, duration: 2500 });
-            setInput("");
-          }
-        } catch (err) {
-          toast.dismiss(VOICE_TOAST_ID);
-          console.error("Whisper STT fallback error:", err);
-          toast.error("语音识别失败，请重试", { id: VOICE_TOAST_ID, duration: 2500 });
-          setInput("");
-        }
-      };
-
-      mediaRecorder.start();
-      setRecording(true);
-    } catch (err: any) {
-      toast.dismiss(VOICE_TOAST_ID);
-      console.error("Mic access denied or error:", err);
-      toast.error("获取麦克风权限失败，请检查浏览器系统设置", { id: VOICE_TOAST_ID, duration: 3000 });
-    }
+  /* ── 通话语音输入：SiliconFlow TeleSpeechASR + 静音自动结束 ── */
+  const cleanupCallSession = () => {
+    const session = callSessionRef.current;
+    if (!session) return;
+    cancelAnimationFrame(session.raf);
+    try { session.ctx?.close(); } catch {}
+    session.stream.getTracks().forEach((track) => track.stop());
+    callSessionRef.current = null;
+    mediaRecorderRef.current = null;
   };
 
-  const toggleRecording = async () => {
-    // 防止快速连点重复启动，导致顶部出现多条提示
-    if (voiceStartingRef.current) return;
-    voiceStartingRef.current = true;
-    window.setTimeout(() => { voiceStartingRef.current = false; }, 600);
+  const finishCallRecording = () => {
+    const session = callSessionRef.current;
+    if (!session || session.stopped) return;
+    session.stopped = true;
+    cancelAnimationFrame(session.raf);
+    setRecording(false);
+    try { session.recorder.stop(); } catch { cleanupCallSession(); }
+  };
 
-    if (recording) {
-      recognitionManualStopRef.current = true;
-      if (recognitionRef.current) {
-        try { recognitionRef.current.stop(); } catch {}
-        setRecording(false);
-      } else if (mediaRecorderRef.current) {
-        try { mediaRecorderRef.current.stop(); } catch {}
-        setRecording(false);
-      }
-      toast.info("已停止录音", { id: VOICE_TOAST_ID, duration: 1800 });
+  const startCallRecording = async () => {
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      toast.error("当前浏览器不支持语音输入", { id: VOICE_TOAST_ID, duration: 2600 });
+      return;
+    }
+
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+    } catch (err) {
+      console.error("Mic access denied:", err);
+      toast.error("麦克风权限获取失败，请检查浏览器设置", { id: VOICE_TOAST_ID, duration: 3000 });
       return;
     }
 
     stopAudio();
+    abortVoiceRef.current = false;
 
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const asrEngine = avatarConfig?.settings?.asr?.engine || "browser";
+    const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+      ? "audio/webm;codecs=opus"
+      : "audio/webm";
+    const recorder = new MediaRecorder(stream, { mimeType });
+    audioChunksRef.current = [];
 
-    if (SR && asrEngine !== "whisper") {
-      try {
-        const rec = new SR();
-        recognitionManualStopRef.current = false;
-        rec.lang = "zh-CN";
-        rec.continuous = false;
-        rec.interimResults = true;
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) audioChunksRef.current.push(event.data);
+    };
 
-        rec.onstart = () => {
-          setRecording(true);
-          toast.success("正在聆听，请说话…", { id: VOICE_TOAST_ID, duration: 2500 });
-        };
-
-        rec.onresult = (e: any) => {
-          const result = e.results[e.results.length - 1];
-          const txt = result?.[0]?.transcript?.trim() || "";
-          if (!txt) return;
-          setInput(txt);
-          if (result.isFinal) {
-            recognitionManualStopRef.current = true;
-            setRecording(false);
-            toast.dismiss(VOICE_TOAST_ID);
-            try { rec.stop(); } catch {}
-            sendMessage(txt);
-          }
-        };
-
-        rec.onend = () => {
-          setRecording(false);
-        };
-
-        rec.onerror = (e: any) => {
-          console.warn("SpeechRecognition error, falling back to MediaRecorder:", e);
-          setRecording(false);
-          toast.dismiss(VOICE_TOAST_ID);
-          startMediaRecorderFallback();
-        };
-
-        rec.start();
-        recognitionRef.current = rec;
-        mediaRecorderRef.current = null;
-        setRecording(true);
+    recorder.onstop = async () => {
+      cleanupCallSession();
+      setRecording(false);
+      if (abortVoiceRef.current) {
+        abortVoiceRef.current = false;
         return;
-      } catch (err) {
-        console.warn("SpeechRecognition start failed, falling back to MediaRecorder:", err);
       }
+
+      const blob = new Blob(audioChunksRef.current, { type: mimeType });
+      if (blob.size < 4000) {
+        toast.error("未检测到有效语音，请再说一次", { id: VOICE_TOAST_ID, duration: 2400 });
+        return;
+      }
+
+      setRecognizing(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", blob, "voice.webm");
+        const res = await request("/api/siliconflow/asr", { method: "POST", body: formData });
+        const data = await res.json().catch(() => ({}));
+        const text = String(data?.text || "").trim();
+        if (text) {
+          setInput("");
+          sendMessage(text);
+        } else {
+          toast.error("没有听清，请再说一次", { id: VOICE_TOAST_ID, duration: 2400 });
+        }
+      } catch (err) {
+        console.error("SiliconFlow ASR failed:", err);
+        toast.error("语音识别失败，请重试", { id: VOICE_TOAST_ID, duration: 2400 });
+      } finally {
+        setRecognizing(false);
+      }
+    };
+
+    recorder.start(200);
+    mediaRecorderRef.current = recorder;
+    setRecording(true);
+
+    // 静音检测：说完约 1.1 秒自动结束并上传识别，最长 15 秒
+    let raf = 0;
+    let ctx: AudioContext | undefined;
+    let speechStarted = false;
+    let silenceSince = 0;
+    const startedAt = performance.now();
+    const SILENCE_MS = 1100;
+    const MAX_MS = 15000;
+
+    try {
+      ctx = new AudioContext();
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      source.connect(analyser);
+      const buffer = new Uint8Array(analyser.fftSize);
+
+      const tick = () => {
+        const session = callSessionRef.current;
+        if (!session || session.stopped) return;
+        analyser.getByteTimeDomainData(buffer);
+        let sum = 0;
+        for (let i = 0; i < buffer.length; i++) {
+          const v = (buffer[i] - 128) / 128;
+          sum += v * v;
+        }
+        const rms = Math.sqrt(sum / buffer.length);
+        const now = performance.now();
+        if (rms > 0.05) {
+          speechStarted = true;
+          silenceSince = 0;
+        } else if (speechStarted && !silenceSince) {
+          silenceSince = now;
+        }
+        if ((silenceSince && now - silenceSince >= SILENCE_MS) || now - startedAt >= MAX_MS) {
+          finishCallRecording();
+          return;
+        }
+        if (!speechStarted && now - startedAt >= 6000) {
+          finishCallRecording();
+          return;
+        }
+        if (session) session.raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    } catch {
+      // 无 AudioContext 时退化为手动点击结束
     }
 
-    startMediaRecorderFallback();
+    callSessionRef.current = { recorder, stream, ctx, raf, stopped: false };
+  };
+
+  const toggleRecording = async () => {
+    // 识别中或快速连点时不重复启动
+    if (voiceStartingRef.current || recognizing) return;
+    voiceStartingRef.current = true;
+    window.setTimeout(() => { voiceStartingRef.current = false; }, 500);
+
+    // 「诗仙 / 小美」：走魔珐星云自带语音识别
+    if (isStarcloudAvatar) {
+      if (recording) {
+        xingyunListeningRef.current = false;
+        setRecording(false);
+        await stopXingyunASR();
+        return;
+      }
+      stopAudio();
+      interruptXingyun();
+      const ok = await startXingyunASR();
+      if (!ok) {
+        toast.error("星云语音识别启动失败，请稍后重试", { id: VOICE_TOAST_ID, duration: 2400 });
+        return;
+      }
+      xingyunListeningRef.current = true;
+      setRecording(true);
+      // 兜底：15 秒仍未返回最终结果则自动结束，避免一直处于聆听态
+      window.setTimeout(() => {
+        if (!xingyunListeningRef.current) return;
+        xingyunListeningRef.current = false;
+        setRecording(false);
+        stopXingyunASR();
+      }, 15000);
+      return;
+    }
+
+    if (recording) {
+      finishCallRecording();
+      return;
+    }
+    await startCallRecording();
   };
 
   const sendMessage = async (question: string) => {
@@ -1092,49 +1201,22 @@ export function QAScreen() {
         <Camera className="w-4 h-4" />
       </motion.button>
 
-      {/* Voice */}
-      <motion.button type="button" whileTap={{ scale: 0.84 }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleRecording(); }}
+      {/* 语音通话 — 取代原语音输入按钮位置 */}
+      <motion.button type="button" whileTap={{ scale: 0.84 }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); startCall(); }}
         className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 relative shadow-md transition-all hover:brightness-105"
         style={{
-          background: recording
-            ? "linear-gradient(135deg,#FB7185 0%,#F43F5E 45%,#8B5CF6 100%)"
-            : "linear-gradient(135deg,#10B981,#059669)",
-          boxShadow: recording
-            ? "0 0 0 3px rgba(244,63,94,0.20), 0 4px 16px rgba(139,92,246,0.42)"
-            : "0 2px 8px rgba(5, 150, 105, 0.3)",
+          background: "linear-gradient(135deg,#34C759,#0E8A4F)",
+          boxShadow: "0 2px 8px rgba(52,199,89,0.34)",
           border: "1.5px solid rgba(255, 255, 255, 0.25)",
           color: "white",
         }}>
-        {recording && (
-          <>
-            <motion.span
-              className="absolute inset-0 rounded-full border-2 pointer-events-none"
-              style={{ borderColor: "rgba(251,113,133,0.7)" }}
-              animate={{ scale: [1, 1.9], opacity: [0.7, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
-            />
-            <motion.span
-              className="absolute inset-0 rounded-full border-2 pointer-events-none"
-              style={{ borderColor: "rgba(139,92,246,0.6)" }}
-              animate={{ scale: [1, 1.9], opacity: [0.7, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut", delay: 0.55 }}
-            />
-          </>
-        )}
-        {recording ? (
-          <span className="relative z-10 flex items-end gap-[3px] h-4">
-            {[0, 1, 2].map((i) => (
-              <motion.span
-                key={i}
-                className="w-[3px] rounded-full bg-white"
-                animate={{ height: [6, 15, 8, 13, 6] }}
-                transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut", delay: i * 0.12 }}
-              />
-            ))}
-          </span>
-        ) : (
-          <Mic className="w-4 h-4 text-white" />
-        )}
+        <motion.span
+          animate={{ rotate: [0, -12, 12, -8, 8, 0] }}
+          transition={{ duration: 2.4, repeat: Infinity, repeatDelay: 1.8, ease: "easeInOut" }}
+          className="flex items-center"
+        >
+          <Phone className="w-4 h-4" />
+        </motion.span>
       </motion.button>
 
       {/* Text input */}
@@ -1305,6 +1387,29 @@ export function QAScreen() {
             <span className="text-[11px] font-black tracking-wider">新建聊天</span>
           </motion.button>
 
+          {/* 视频聊天开关 — 默认开启，可点击关闭 */}
+          <motion.button
+            whileTap={{ scale: 0.92 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setVideoChatEnabled((v) => !v);
+            }}
+            className="px-4 py-2 rounded-full flex items-center gap-1.5 shadow-lg border select-none animate-fade-in cursor-pointer pointer-events-auto"
+            style={{
+              background: videoChatEnabled
+                ? "linear-gradient(135deg,#5AB2FF 0%,#2563EB 100%)"
+                : "rgba(255,255,255,0.14)",
+              borderColor: videoChatEnabled ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.22)",
+              boxShadow: videoChatEnabled ? "0 4px 14px rgba(37,99,235,0.42)" : "none",
+              color: "white",
+            }}
+          >
+            {videoChatEnabled ? <Video className="w-3.5 h-3.5" /> : <VideoOff className="w-3.5 h-3.5" />}
+            <span className="text-[11px] font-black tracking-wider">
+              视频聊天{videoChatEnabled ? "" : "（已关）"}
+            </span>
+          </motion.button>
+
             {/* Background Dropdown Menu */}
             {showBgMenu && (
               <div className="absolute right-0 top-12 z-[70] w-56 rounded-2xl p-3 border border-white/10 backdrop-blur-xl bg-black/80 shadow-2xl space-y-2.5 pointer-events-auto">
@@ -1347,13 +1452,19 @@ export function QAScreen() {
             </motion.div>
           )}
           {!isDesktop && <DigitalAvatar state={avatarState} size="hero" audioElement={audioRef.current} avatarStyle={selectedStyle} />}
+
+          {/* 通话中的摄像头小窗（9:16 右上角小窗） */}
+          {inCall && videoChatEnabled && (
+            <VideoCallPreview active width={72} height={128} className="top-2 right-2" />
+          )}
         </div>
 
         {/* Chat drawer — fully transparent, no background mask */}
         <motion.div
           animate={{ height: chatExpanded ? "42vh" : 0 }}
           transition={{ type: "spring", stiffness: 260, damping: 30 }}
-          className="overflow-hidden absolute left-3 right-3 bottom-[128px] z-30 rounded-t-2xl pointer-events-auto">
+          style={{ bottom: inCall ? 212 : 128 }}
+          className="overflow-hidden absolute left-3 right-3 z-30 rounded-t-2xl pointer-events-auto">
           <div ref={mobileScrollRef} className="h-full overflow-y-auto px-4 py-3"
             style={{
               maskImage: "linear-gradient(to bottom, transparent 0%, black 12%, black 86%, transparent 100%)",
@@ -1363,7 +1474,19 @@ export function QAScreen() {
           </div>
         </motion.div>
 
-        {/* Input zone — styled like reference image */}
+        {/* Input zone — 通话中隐藏快捷提问与输入框，原位替换为通话控制面板 */}
+        {inCall ? (
+          <div className="flex-shrink-0 px-3 pb-[88px] pt-2 relative z-40">
+            <VoiceCallDock
+              recording={recording}
+              recognizing={recognizing}
+              recordSeconds={recordSeconds}
+              onTalkToggle={toggleRecording}
+              onHangUp={endCall}
+              onConnect={callGreeting}
+            />
+          </div>
+        ) : (
         <div className="flex-shrink-0 px-3 pb-8 pt-2 relative z-40">
           {/* Quick prompts */}
           <div className="flex items-center gap-2 overflow-x-auto scrollbar-none mb-2.5 px-1">
@@ -1386,9 +1509,9 @@ export function QAScreen() {
           </div>
           {/* 语音识别状态条：仅一条，替换原来重复的顶部提示 */}
           {renderVoiceStatus(true)}
-          {/* Input row: [Camera] [Mic] [Input pill] [Send/Camera] */}
+          {/* Input row: [Camera] [语音通话] [Input pill] [Send/Camera] */}
           <div className="flex items-center gap-2.5">
-            {/* Camera button — left of mic */}
+            {/* Camera button — left of 语音通话 */}
             <motion.button type="button" whileTap={{ scale: 0.88 }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowCamera(true); }}
               className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg transition-all hover:brightness-105"
               style={{
@@ -1399,44 +1522,21 @@ export function QAScreen() {
               <Camera className="w-5 h-5 text-white" />
             </motion.button>
 
-            {/* Voice button */}
-            <motion.button type="button" whileTap={{ scale: 0.88 }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleRecording(); }}
+            {/* 语音通话 — 取代原语音输入按钮位置 */}
+            <motion.button type="button" whileTap={{ scale: 0.88 }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); startCall(); }}
               className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 relative shadow-lg transition-all hover:brightness-105"
               style={{
-                background: recording
-                  ? "linear-gradient(135deg,#FB7185 0%,#F43F5E 45%,#8B5CF6 100%)"
-                  : "linear-gradient(135deg,#10B981,#059669)",
-                boxShadow: recording
-                  ? "0 0 0 4px rgba(244,63,94,0.22), 0 6px 20px rgba(139,92,246,0.5)"
-                  : "0 4px 14px rgba(5, 150, 105, 0.45)",
+                background: "linear-gradient(135deg,#34C759 0%,#0E8A4F 100%)",
+                boxShadow: "0 4px 14px rgba(52,199,89,0.42)",
                 border: "1.5px solid rgba(255,255,255,0.25)",
               }}>
-              {recording && (
-                <>
-                  <motion.span className="absolute inset-0 rounded-full border-2 pointer-events-none"
-                    style={{ borderColor: "rgba(251,113,133,0.75)" }}
-                    animate={{ scale: [1, 1.95], opacity: [0.75, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }} />
-                  <motion.span className="absolute inset-0 rounded-full border-2 pointer-events-none"
-                    style={{ borderColor: "rgba(139,92,246,0.65)" }}
-                    animate={{ scale: [1, 1.95], opacity: [0.75, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut", delay: 0.55 }} />
-                </>
-              )}
-              {recording ? (
-                <span className="relative z-10 flex items-end gap-[3.5px] h-5">
-                  {[0, 1, 2].map((i) => (
-                    <motion.span
-                      key={i}
-                      className="w-[3.5px] rounded-full bg-white"
-                      animate={{ height: [7, 19, 10, 16, 7] }}
-                      transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut", delay: i * 0.12 }}
-                    />
-                  ))}
-                </span>
-              ) : (
-                <Mic className="w-5 h-5 text-white" />
-              )}
+              <motion.span
+                animate={{ rotate: [0, -12, 12, -8, 8, 0] }}
+                transition={{ duration: 2.4, repeat: Infinity, repeatDelay: 1.8, ease: "easeInOut" }}
+                className="flex items-center"
+              >
+                <Phone className="w-5 h-5 text-white" />
+              </motion.span>
             </motion.button>
 
             {/* Text input pill */}
@@ -1476,6 +1576,7 @@ export function QAScreen() {
             </AnimatePresence>
           </div>
         </div>
+        )}
       </div>
 
       {/* ══════════════════════════════════════════════
@@ -1572,6 +1673,11 @@ export function QAScreen() {
           <div className="relative z-10 flex flex-col items-center px-6 w-full animate-fade-in">
             {isDesktop && <DigitalAvatar state={avatarState} size="desktop-hero" audioElement={audioRef.current} avatarStyle={selectedStyle} />}
 
+            {/* 通话中的摄像头小窗（9:16 右上角小窗） */}
+            {inCall && videoChatEnabled && (
+              <VideoCallPreview active width={84} height={150} className="top-[100px] right-3" />
+            )}
+
             {spotName && (
               <div className="mt-4 flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px]"
                 style={{ background: "rgba(210,160,83,0.12)", border: "1px solid rgba(210,160,83,0.28)", color: "#D2A053" }}>
@@ -1611,12 +1717,28 @@ export function QAScreen() {
                   可语音提问 · 多轮对话 · 知识库实时检索
                 </p>
               </div>
-              <button
-                onClick={handleNewChat}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#D5E5DC] text-[#4F6F52] hover:bg-[#EBF3EE] text-xs font-black transition-all cursor-pointer shadow-sm bg-white"
-              >
-                <Plus className="w-3.5 h-3.5" /> 新建聊天
-              </button>
+              <div className="flex flex-col gap-1.5">
+                <button
+                  onClick={handleNewChat}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#D5E5DC] text-[#4F6F52] hover:bg-[#EBF3EE] text-xs font-black transition-all cursor-pointer shadow-sm bg-white"
+                >
+                  <Plus className="w-3.5 h-3.5" /> 新建聊天
+                </button>
+                <button
+                  onClick={() => {
+                    setVideoChatEnabled((v) => !v);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-black transition-all cursor-pointer shadow-sm"
+                  style={
+                    videoChatEnabled
+                      ? { borderColor: "#BFD9FF", color: "#1D63D6", background: "#EFF6FF" }
+                      : { borderColor: "#E2E5E3", color: "#8A9690", background: "#FFFFFF" }
+                  }
+                >
+                  {videoChatEnabled ? <Video className="w-3.5 h-3.5" /> : <VideoOff className="w-3.5 h-3.5" />}
+                  视频聊天{videoChatEnabled ? "" : "（已关）"}
+                </button>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <motion.div animate={{ backgroundColor: loading ? "#D2A053" : "#34C759" }}
@@ -1637,7 +1759,20 @@ export function QAScreen() {
             {renderMessageList(true, desktopBottomRef)}
           </div>
 
-          {/* Input */}
+          {/* Input — 通话中隐藏快捷提问与输入框，原位替换为通话控制面板 */}
+          {inCall ? (
+            <div className="px-6 py-4 flex-shrink-0"
+              style={{ borderTop: "1px solid #E6E2D8", background: "rgba(250,248,245,0.98)" }}>
+              <VoiceCallDock
+                recording={recording}
+                recognizing={recognizing}
+                recordSeconds={recordSeconds}
+                onTalkToggle={toggleRecording}
+                onHangUp={endCall}
+                onConnect={callGreeting}
+              />
+            </div>
+          ) : (
           <div className="px-6 py-4 flex-shrink-0"
             style={{ borderTop: "1px solid #E6E2D8", background: "rgba(250,248,245,0.98)" }}>
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-none mb-3 px-1 py-0.5">
@@ -1654,6 +1789,7 @@ export function QAScreen() {
             </div>
             {renderInputBar()}
           </div>
+          )}
         </div>
       </div>
 

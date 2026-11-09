@@ -1,6 +1,6 @@
 "use client";
 
-import type { AgentConversationState, AgentState } from "@xmov/avatar/agent";
+import type { AgentConversationState, AgentState, AgentASRResult } from "@xmov/avatar/agent";
 
 /**
  * 魔珐星云具身智能体运行管理器（支持「诗仙」与「小美」两个独立驱动应用）。
@@ -37,12 +37,14 @@ interface XingyunStore {
   profile: XingyunAgentProfile | null;
   mountingToken: number;
   conversationListeners: Set<(state: AgentConversationState) => void>;
+  asrListeners: Set<(result: AgentASRResult) => void>;
 }
 
 export interface XingyunMountHandlers {
   onProgress?: (percent: number) => void;
   onState?: (state: AgentState) => void;
   onConversation?: (state: AgentConversationState) => void;
+  onASRResult?: (result: AgentASRResult) => void;
   onError?: (message: string) => void;
 }
 
@@ -54,6 +56,7 @@ function getStore(): XingyunStore {
       profile: null,
       mountingToken: 0,
       conversationListeners: new Set(),
+      asrListeners: new Set(),
     };
   }
   return scope.__XINGYUN_STORE__;
@@ -67,6 +70,18 @@ export function subscribeXingyunConversation(cb: (state: AgentConversationState)
 function emitConversation(state: AgentConversationState) {
   getStore().conversationListeners.forEach((cb) => {
     try { cb(state); } catch { /* ignore listener errors */ }
+  });
+}
+
+/** 订阅星云内置 ASR 识别结果（含中间结果与最终结果） */
+export function subscribeXingyunASR(cb: (result: AgentASRResult) => void): () => void {
+  getStore().asrListeners.add(cb);
+  return () => getStore().asrListeners.delete(cb);
+}
+
+function emitASR(result: AgentASRResult) {
+  getStore().asrListeners.forEach((cb) => {
+    try { cb(result); } catch { /* ignore listener errors */ }
   });
 }
 
@@ -139,6 +154,10 @@ export async function mountXingyunAgent(
       onConversationChange(event: { state: AgentConversationState }) {
         emitConversation(event.state);
         handlers.onConversation?.(event.state);
+      },
+      onASRResult(result: AgentASRResult) {
+        emitASR(result);
+        handlers.onASRResult?.(result);
       },
       onError(error: { code?: string; message?: string }) {
         handlers.onError?.(`${error?.code ?? ""} ${error?.message ?? ""}`.trim());
