@@ -7,6 +7,7 @@ import {
   Users, Bot, MessageCircle, MapPin, Navigation, TrendingUp
 } from "lucide-react";
 import { auth } from "@eazo/sdk";
+import { PaymentQrModal } from "@/components/ui/PaymentQrModal";
 
 const Live2DViewer = dynamic(() => import("@/components/ui/Live2DViewer"), { ssr: false });
 
@@ -294,6 +295,8 @@ export default function WelcomePage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeFeatureIndex, setActiveFeatureIndex] = useState(2); // Center initial card
   const [windowWidth, setWindowWidth] = useState(1200);
+  // 会员订阅扫码支付
+  const [payPlan, setPayPlan] = useState<{ name: string; price: string } | null>(null);
 
 
 
@@ -1047,12 +1050,36 @@ export default function WelcomePage() {
                       </li>
                     ))}
                   </ul>
+
+                  <button
+                    onClick={() => {
+                      // 0 元体验套餐：直接进入登录页，不弹支付
+                      if (Number(plan.price) === 0) {
+                        window.location.href = "/login";
+                        return;
+                      }
+                      setPayPlan({ name: plan.name, price: plan.price });
+                    }}
+                    className="mt-4 md:mt-6 w-full py-2.5 md:py-3 rounded-xl text-[10px] md:text-xs font-black transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
+                    style={plan.buttonStyle}
+                  >
+                    {plan.cta} · ￥{plan.price}
+                  </button>
                 </div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
+
+      {/* 会员订阅扫码支付弹窗 */}
+      <PaymentQrModal
+        isOpen={!!payPlan}
+        onClose={() => setPayPlan(null)}
+        amount={payPlan?.price ?? ""}
+        title="会员订阅支付"
+        itemLabel={payPlan ? `${payPlan.name} · ￥${payPlan.price}` : undefined}
+      />
 
       {/* Footer */}
       <footer className="bg-[#121815] text-[#8F9F8F] border-t border-white/5 py-12">

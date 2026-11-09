@@ -22,7 +22,7 @@ import {
   subscribeXingyunASR,
   subscribeXingyunConversation,
 } from "@/lib/xingyun/agent";
-import { isXingyunAvatarStyle } from "@/lib/xingyun/preset";
+import { isXingyunAvatarStyle, XINGYUN_AVATAR_STYLE } from "@/lib/xingyun/preset";
 import { isXiaomeiAvatarStyle } from "@/lib/xiaomei/preset";
 import { speakWithXiaomei } from "@/lib/xiaomei/agent";
 import {
@@ -46,6 +46,66 @@ const BG_PRESETS = [
   { id: "pavilion", label: "山景", url: "/images/spots/10024.webp" },
   { id: "chongqing", label: "重庆", url: "/background/重庆.webp" },
 ];
+
+/**
+ * 将浏览器录音（webm/mp4 等）转成 16kHz 单声道 16bit WAV，
+ * 以兼容 SiliconFlow TeleAI/TeleSpeechASR 的音频格式要求。
+ */
+async function convertRecordingToWav(blob: Blob, targetRate = 16000): Promise<Blob> {
+  const arrayBuffer = await blob.arrayBuffer();
+  const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+  const ctx = new AC();
+  const decoded = await ctx.decodeAudioData(arrayBuffer);
+  await ctx.close();
+
+  const channels = decoded.numberOfChannels;
+  const data: Float32Array[] = [];
+  for (let c = 0; c < channels; c++) data.push(decoded.getChannelData(c));
+
+  const length = Math.floor(decoded.duration * targetRate);
+  const out = new Float32Array(length);
+  const ratio = decoded.sampleRate / targetRate;
+
+  for (let i = 0; i < length; i++) {
+    const pos = i * ratio;
+    const i0 = Math.floor(pos);
+    const i1 = Math.min(i0 + 1, decoded.length - 1);
+    const frac = pos - i0;
+    let sample = 0;
+    for (let c = 0; c < channels; c++) {
+      sample += data[c][i0] * (1 - frac) + data[c][i1] * frac;
+    }
+    out[i] = sample / channels;
+  }
+
+  const buffer = new ArrayBuffer(44 + out.length * 2);
+  const view = new DataView(buffer);
+  const writeStr = (offset: number, str: string) => {
+    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+  };
+
+  writeStr(0, "RIFF");
+  view.setUint32(4, 36 + out.length * 2, true);
+  writeStr(8, "WAVE");
+  writeStr(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, targetRate, true);
+  view.setUint32(28, targetRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeStr(36, "data");
+  view.setUint32(40, out.length * 2, true);
+
+  let offset = 44;
+  for (let i = 0; i < out.length; i++, offset += 2) {
+    const s = Math.max(-1, Math.min(1, out[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+
+  return new Blob([buffer], { type: "audio/wav" });
+}
 
 function getVoiceForOption(opt: VoiceOption): SpeechSynthesisVoice | null {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
@@ -281,8 +341,8 @@ export function QAScreen() {
     speak(`您好！我是${opt.avatarName}，很高兴为您服务！`, true);
   };
 
-  // Persona selection state
-  const [selectedStyle, setSelectedStyle] = useState<string>("live2d_Hiyori");
+  // Persona selection state（默认展示「诗仙·李白」，导游界面与语音通话共用）
+  const [selectedStyle, setSelectedStyle] = useState<string>(XINGYUN_AVATAR_STYLE);
   const [showPersonaMenu, setShowPersonaMenu] = useState(false);
   const [allAvatars, setAllAvatars] = useState<any[]>([]);
   const [customAvatars, setCustomAvatars] = useState<any[]>([]);
@@ -455,7 +515,7 @@ export function QAScreen() {
   });
   useEffect(() => {
     if (!isStarcloudAvatar) return;
-    return subscribeXingyunASR((result) => {
+    const unsubscribe = subscribeXingyunASR((result) => {
       if (!xingyunListeningRef.current) return;
       const text = (result?.text || "").trim();
       if (!text) return;
@@ -470,6 +530,13 @@ export function QAScreen() {
         window.setTimeout(() => setRecognizing(false), 700);
       }
     });
+    // 切换形象时结束进行中的星云语音识别，避免残留状态
+    return () => {
+      unsubscribe();
+      xingyunListeningRef.current = false;
+      setRecording(false);
+      stopXingyunASR();
+    };
   }, [isStarcloudAvatar]);
 
   const [avatarWidth, setAvatarWidth] = useState(450); // Default to a wider layout (450px)
@@ -849,16 +916,23 @@ export function QAScreen() {
         return;
       }
 
-      const blob = new Blob(audioChunksRef.current, { type: mimeType });
-      if (blob.size < 4000) {
+      const rawBlob = new Blob(audioChunksRef.current, { type: mimeType });
+      if (rawBlob.size < 4000) {
         toast.error("未检测到有效语音，请再说一次", { id: VOICE_TOAST_ID, duration: 2400 });
         return;
       }
 
       setRecognizing(true);
+      let wavBlob: Blob | null = null;
+      try {
+        wavBlob = await convertRecordingToWav(rawBlob);
+      } catch (err) {
+        console.warn("WAV convert failed, fallback to raw recording:", err);
+      }
+      const uploadBlob = wavBlob || rawBlob;
       try {
         const formData = new FormData();
-        formData.append("file", blob, "voice.webm");
+        formData.append("file", uploadBlob, wavBlob ? "voice.wav" : "voice.webm");
         const res = await request("/api/siliconflow/asr", { method: "POST", body: formData });
         const data = await res.json().catch(() => ({}));
         const text = String(data?.text || "").trim();
@@ -1084,7 +1158,11 @@ export function QAScreen() {
   // AvatarSelectorModal takes care of selection dialog now
 
   /* ── Message list (shared between mobile & desktop) ── */
-  const renderMessageList = (isMobileImmersive = false, bottomRefToUse?: React.RefObject<HTMLDivElement | null>) => (
+  const renderMessageList = (
+    isMobileImmersive = false,
+    bottomRefToUse?: React.RefObject<HTMLDivElement | null>,
+    textSize: "sm" | "md" = "md"
+  ) => (
     <div className="space-y-3">
       {messages.map((msg, i) => (
         <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -1108,7 +1186,7 @@ export function QAScreen() {
           </div>
           {/* Bubble */}
           <div className={`flex flex-col gap-0.5 max-w-[76%] ${msg.role === "user" ? "items-end" : ""}`}>
-            <div className="px-4 py-3 text-[13px] leading-relaxed"
+            <div className={`px-4 py-3 leading-relaxed ${textSize === "sm" ? "text-[11.5px]" : "text-[15px]"}`}
               style={isMobileImmersive ? {
                 borderRadius: msg.role === "assistant" ? "4px 18px 18px 18px" : "18px 4px 18px 18px",
                 background: msg.role === "assistant"
@@ -1441,7 +1519,7 @@ export function QAScreen() {
         </div>
 
         {/* Avatar zone */}
-        <div className="flex-1 flex flex-col items-center justify-center px-4 relative min-h-0 pb-36">
+        <div className={`flex-1 flex flex-col items-center justify-center px-4 relative min-h-0 pb-36 ${isStarcloudAvatar ? "z-[45]" : ""}`}>
           <div className="absolute inset-0 pointer-events-none"
             style={{ background: "radial-gradient(ellipse 60% 50% at 50% 40%,rgba(79,111,82,0.12) 0%,transparent 70%)" }} />
           {spotName && (
@@ -1453,8 +1531,8 @@ export function QAScreen() {
           )}
           {!isDesktop && <DigitalAvatar state={avatarState} size="hero" audioElement={audioRef.current} avatarStyle={selectedStyle} />}
 
-          {/* 通话中的摄像头小窗（9:16 右上角小窗） */}
-          {inCall && videoChatEnabled && (
+          {/* 摄像头小窗：默认开启，通话/导览界面均显示（9:16 右上角可拖动） */}
+          {videoChatEnabled && (
             <VideoCallPreview active width={72} height={128} className="top-2 right-2" />
           )}
         </div>
@@ -1463,20 +1541,20 @@ export function QAScreen() {
         <motion.div
           animate={{ height: chatExpanded ? "42vh" : 0 }}
           transition={{ type: "spring", stiffness: 260, damping: 30 }}
-          style={{ bottom: inCall ? 212 : 128 }}
+          style={{ bottom: inCall ? 180 : 128 }}
           className="overflow-hidden absolute left-3 right-3 z-30 rounded-t-2xl pointer-events-auto">
           <div ref={mobileScrollRef} className="h-full overflow-y-auto px-4 py-3"
             style={{
               maskImage: "linear-gradient(to bottom, transparent 0%, black 12%, black 86%, transparent 100%)",
               WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 12%, black 86%, transparent 100%)",
             }}>
-            {renderMessageList(true, mobileBottomRef)}
+            {renderMessageList(true, mobileBottomRef, "sm")}
           </div>
         </motion.div>
 
         {/* Input zone — 通话中隐藏快捷提问与输入框，原位替换为通话控制面板 */}
         {inCall ? (
-          <div className="flex-shrink-0 px-3 pb-[88px] pt-2 relative z-40">
+          <div className="flex-shrink-0 px-3 pb-[56px] pt-2 relative z-40">
             <VoiceCallDock
               recording={recording}
               recognizing={recognizing}
@@ -1673,8 +1751,8 @@ export function QAScreen() {
           <div className="relative z-10 flex flex-col items-center px-6 w-full animate-fade-in">
             {isDesktop && <DigitalAvatar state={avatarState} size="desktop-hero" audioElement={audioRef.current} avatarStyle={selectedStyle} />}
 
-            {/* 通话中的摄像头小窗（9:16 右上角小窗） */}
-            {inCall && videoChatEnabled && (
+            {/* 摄像头小窗：默认开启（9:16 右上角可拖动） */}
+            {videoChatEnabled && (
               <VideoCallPreview active width={84} height={150} className="top-[100px] right-3" />
             )}
 
@@ -1717,7 +1795,7 @@ export function QAScreen() {
                   可语音提问 · 多轮对话 · 知识库实时检索
                 </p>
               </div>
-              <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-1.5">
                 <button
                   onClick={handleNewChat}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#D5E5DC] text-[#4F6F52] hover:bg-[#EBF3EE] text-xs font-black transition-all cursor-pointer shadow-sm bg-white"
@@ -1756,7 +1834,7 @@ export function QAScreen() {
               maskImage: "linear-gradient(to bottom, transparent 0%, black 6%, black 94%, transparent 100%)",
               WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 6%, black 94%, transparent 100%)",
             }}>
-            {renderMessageList(true, desktopBottomRef)}
+            {renderMessageList(true, desktopBottomRef, "md")}
           </div>
 
           {/* Input — 通话中隐藏快捷提问与输入框，原位替换为通话控制面板 */}

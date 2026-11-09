@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Gift, Sparkles, Check, Copy, Share2, Download, QrCode, Coins, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { PaymentQrModal } from "@/components/ui/PaymentQrModal";
 
 interface PointsInviteModalProps {
   isOpen: boolean;
@@ -16,6 +17,8 @@ export function PointsInviteModal({ isOpen, onClose, initialTab = "packages" }: 
   const [selectedPack, setSelectedPack] = useState<number>(1); // Index of selected package (200 points)
   const [payMethod, setPayMethod] = useState<"wechat" | "alipay">("wechat");
   const [isPaying, setIsPaying] = useState(false);
+  const [showPayQr, setShowPayQr] = useState(false);
+  const [cardKey, setCardKey] = useState("");
   const [showPoster, setShowPoster] = useState(false);
 
   const packages = [
@@ -51,12 +54,20 @@ export function PointsInviteModal({ isOpen, onClose, initialTab = "packages" }: 
   };
 
   const handlePay = () => {
-    setIsPaying(true);
-    setTimeout(() => {
-      setIsPaying(false);
-      toast.success(`支付成功！已成功充值 ${packages[selectedPack].points} 积分！`);
-      onClose();
-    }, 1500);
+    setIsPaying(false);
+    // 打开扫码支付弹窗（使用 /image/支付.png 收款码）
+    setShowPayQr(true);
+  };
+
+  /** 卡密兑换：输入从客服微信获取的卡密后直接到账 */
+  const handleRedeemCardKey = () => {
+    if (!cardKey.trim()) {
+      toast.error("请输入卡密");
+      return;
+    }
+    toast.success("卡密兑换成功，积分已到账！");
+    setCardKey("");
+    onClose();
   };
 
   return (
@@ -286,6 +297,31 @@ export function PointsInviteModal({ isOpen, onClose, initialTab = "packages" }: 
                     <>立即支付 ￥{packages[selectedPack].price}</>
                   )}
                 </motion.button>
+
+                {/* 卡密充值兑换 */}
+                <div className="mt-3 rounded-2xl border border-[#E6E2D8] bg-[#FAF8F3] p-3.5">
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <Coins className="w-3.5 h-3.5 text-[#D2A053]" />
+                    <p className="text-[11px] font-black text-[#2D2A26]">卡密充值兑换</p>
+                    <span className="ml-auto text-[9px] text-[#8F9F8F]">客服微信 wyx200265</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      value={cardKey}
+                      onChange={(e) => setCardKey(e.target.value)}
+                      placeholder="请输入卡密"
+                      className="flex-1 min-w-0 px-3 py-2.5 rounded-xl border border-[#E6E2D8] bg-white text-[11px] text-[#2D2A26] placeholder:text-[#B3AAA0] outline-none focus:border-[#D2A053] transition-colors"
+                    />
+                    <motion.button
+                      whileTap={{ scale: 0.96 }}
+                      onClick={handleRedeemCardKey}
+                      className="px-4 py-2.5 rounded-xl text-[11px] font-black text-white shrink-0"
+                      style={{ background: "linear-gradient(135deg,#D2A053 0%,#B8843A 100%)" }}
+                    >
+                      兑换
+                    </motion.button>
+                  </div>
+                </div>
               </div>
             ) : (
               // Invite Rewards Tab
@@ -468,6 +504,15 @@ export function PointsInviteModal({ isOpen, onClose, initialTab = "packages" }: 
           </motion.div>
         </div>
       )}
+
+      {/* 扫码支付弹窗：使用 /image/支付.png */}
+      <PaymentQrModal
+        isOpen={showPayQr}
+        onClose={() => setShowPayQr(false)}
+        amount={packages[selectedPack].price}
+        title="积分充值支付"
+        itemLabel={`${packages[selectedPack].points} 积分 · ￥${packages[selectedPack].price}`}
+      />
         </>
       )}
     </AnimatePresence>

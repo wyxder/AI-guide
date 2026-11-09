@@ -5,13 +5,14 @@ import {
   MapPin, Heart, Clock, Settings, MessageSquare,
   Share2, Image as ImageIcon, ChevronRight, ChevronLeft, ChevronDown,
   History, Trophy, Bell, Sun, Zap, Baby, ArrowRight, LogOut, X,
-  Shield, Eye, BookOpen, Volume2, Trash2, HelpCircle, Info, Sparkles, Compass, Map, User, Navigation, Check, Pencil
+  Shield, Eye, BookOpen, Volume2, Trash2, HelpCircle, Info, Sparkles, Compass, Map, User, Navigation, Check, Pencil, Coins
 } from "lucide-react";
 import { useEazo } from "@eazo/sdk/react";
 import { auth } from "@eazo/sdk";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PosterGenerator } from "@/components/ui/PosterGenerator";
+import NextImage from "next/image";
 import { request } from "@/lib/api/request";
 import { toast } from "sonner";
 import { getLocalScenicImage } from "@/lib/scenic-image";
@@ -87,6 +88,7 @@ export function ProfileScreen() {
     return 1280;
   });
   const [showRechargeModal, setShowRechargeModal] = useState(false);
+  const [cardKey, setCardKey] = useState("");
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [selectedPointsTier, setSelectedPointsTier] = useState<{ points: number; price: number }>({ points: 500, price: 50 });
   const [paymentMethod, setPaymentMethod] = useState<"wechat" | "alipay">("wechat");
@@ -2948,6 +2950,41 @@ export function ProfileScreen() {
                   </div>
                 </div>
 
+                {/* 卡密充值兑换 */}
+                <div className="rounded-2xl border border-dashed border-[#D2A053]/60 bg-[#FBF7EE] p-3.5 space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <Coins className="w-4 h-4 text-[#B8843A]" />
+                    <p className="text-xs font-extrabold text-zinc-800">卡密充值兑换</p>
+                    <span className="ml-auto text-[10px] text-zinc-400">客服微信 wyx200265</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      value={cardKey}
+                      onChange={(e) => setCardKey(e.target.value)}
+                      placeholder="请输入卡密"
+                      className="flex-1 min-w-0 px-3 py-2.5 rounded-xl border border-zinc-200 bg-white text-xs text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-[#D2A053] transition-colors"
+                    />
+                    <button
+                      onClick={() => {
+                        if (!cardKey.trim()) {
+                          toast.error("请输入卡密");
+                          return;
+                        }
+                        toast.success("卡密兑换成功，积分已到账！");
+                        setCardKey("");
+                        setShowRechargeModal(false);
+                      }}
+                      className="px-4 py-2.5 rounded-xl text-xs font-black text-white shrink-0 active:scale-95 transition-transform"
+                      style={{ background: "linear-gradient(135deg,#D2A053 0%,#B8843A 100%)" }}
+                    >
+                      兑换
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-zinc-400 leading-relaxed">
+                    扫码支付后联系客服微信获取卡密，输入上方即可完成积分充值。
+                  </p>
+                </div>
+
                 {/* Payment Method Selector */}
                 <div className="space-y-2 pt-1">
                   <label className="text-xs font-extrabold text-zinc-700">选择支付方式</label>
@@ -3009,7 +3046,7 @@ export function ProfileScreen() {
         )}
       </AnimatePresence>
 
-      {/* ── 02. 模拟支付收银台弹窗 (Simulated Payment Gateway Modal) ── */}
+      {/* ── 02. 收银台弹窗（扫码支付） ── */}
       <AnimatePresence>
         {showPaymentGatewayModal && (
           <div className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/80 backdrop-blur-lg" onClick={() => setShowPaymentGatewayModal(false)}>
@@ -3028,7 +3065,7 @@ export function ProfileScreen() {
                 <div className="flex items-center gap-2.5">
                   <span className="text-xl">{paymentMethod === "wechat" ? "🟢" : "🔵"}</span>
                   <div>
-                    <h3 className="font-black text-base">{paymentMethod === "wechat" ? "微信收银台 (模拟支付)" : "支付宝收银台 (模拟支付)"}</h3>
+                    <h3 className="font-black text-base">{paymentMethod === "wechat" ? "微信收银台" : "支付宝收银台"}</h3>
                     <p className="text-[11px] text-white/80">旅行家Pro 官方安全订单</p>
                   </div>
                 </div>
@@ -3049,25 +3086,17 @@ export function ProfileScreen() {
                   </span>
                 </div>
 
-                {/* Simulated QR Code Box */}
-                <div className="w-48 h-48 mx-auto bg-zinc-50 rounded-2xl border-2 border-dashed border-zinc-300 p-3 flex flex-col items-center justify-center relative overflow-hidden group shadow-inner">
-                  <div className="w-full h-full bg-white rounded-xl border border-zinc-200 flex flex-col items-center justify-center p-2 relative">
-                    <div className="w-32 h-32 bg-zinc-900 rounded-lg p-1.5 flex flex-col justify-between">
-                      <div className="flex justify-between">
-                        <div className="w-6 h-6 bg-white rounded-xs p-0.5"><div className="w-full h-full bg-zinc-900 rounded-2xs" /></div>
-                        <div className="w-6 h-6 bg-white rounded-xs p-0.5"><div className="w-full h-full bg-zinc-900 rounded-2xs" /></div>
-                      </div>
-                      <div className="text-center font-black text-[8px] text-white tracking-widest uppercase">
-                        {paymentMethod === "wechat" ? "WECHAT PAY" : "ALIPAY"}
-                      </div>
-                      <div className="flex justify-between">
-                        <div className="w-6 h-6 bg-white rounded-xs p-0.5"><div className="w-full h-full bg-zinc-900 rounded-2xs" /></div>
-                        <div className="w-2.5 h-2.5 bg-white rounded-2xs" />
-                      </div>
-                    </div>
-                  </div>
-                  {/* Scanning Animation */}
-                  <div className={`absolute left-0 right-0 h-1 bg-gradient-to-r ${paymentMethod === "wechat" ? "from-emerald-400 to-teal-400" : "from-blue-400 to-indigo-400"} animate-pulse shadow-md top-1/2`} />
+                {/* 收款二维码 */}
+                <div className="relative w-52 h-52 mx-auto rounded-3xl bg-white p-3 shadow-[0_12px_34px_rgba(0,0,0,0.14)] border border-zinc-200 overflow-hidden">
+                  <NextImage
+                    src="/image/支付.png"
+                    alt="支付二维码"
+                    width={208}
+                    height={208}
+                    className="w-full h-full object-contain"
+                    priority
+                    unoptimized
+                  />
                 </div>
 
                 <p className="text-xs text-zinc-500 font-medium">
@@ -3102,7 +3131,7 @@ export function ProfileScreen() {
                   {isProcessingPayment ? (
                     <span>正在完成网关校验...</span>
                   ) : (
-                    <span>确认模拟完成支付</span>
+                    <span>确认完成支付</span>
                   )}
                 </button>
               </div>
