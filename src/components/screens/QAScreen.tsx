@@ -1113,7 +1113,8 @@ export function QAScreen() {
     // 同时先停掉星云 SDK 自带识别，避免抢占麦克风导致「一直聆听却识别不到」
     if (isStarcloudAvatar) {
       const xingyunProfile = isXiaomeiAvatar ? "xiaomei" as const : "shixian" as const;
-      interruptXingyun(xingyunProfile);
+      // 仅在数字人正在播报时打断，避免无谓地打断渲染管线造成瞬时丢帧
+      if (avatarState === "speaking") interruptXingyun(xingyunProfile);
       stopXingyunASR(xingyunProfile);
     }
     await startCallRecording();

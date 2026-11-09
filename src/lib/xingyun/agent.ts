@@ -13,6 +13,12 @@ import type { AgentConversationState, AgentState, AgentASRResult } from "@xmov/a
 
 const INIT_TIMEOUT_MS = 60000;
 
+/**
+ * 可自愈的瞬态渲染告警：SDK 内部会 forceSyncDecoder / 重建 WebGL 自动恢复，
+ * 无需打断用户，也不应覆盖成「加载失败」浮层（常见于主线程繁忙时的 20008 连续丢帧）。
+ */
+const RECOVERABLE_CODES = new Set([20005, 20006, 20007, 20008, 20009, 60001, 60002, 60004, 60007]);
+
 /** 星云驱动应用档案：shixian=诗仙，xiaomei=小美 */
 export type XingyunAgentProfile = "shixian" | "xiaomei";
 
@@ -164,6 +170,12 @@ export async function mountXingyunAgent(
     appSecret,
     gatewayServer,
     onMessage(error: { code?: string | number; message?: string }) {
+      const code = Number(error?.code);
+      if (RECOVERABLE_CODES.has(code)) {
+        // 丢帧/上下文丢失类告警由 SDK 自行恢复，仅记录日志，不弹错误层
+        console.warn(`[xingyun] 渲染告警 ${code}`, error?.message ?? "");
+        return;
+      }
       handlers.onError?.(`渲染异常 ${error?.code ?? ""} ${error?.message ?? ""}`.trim());
     },
     // 由 SDK 在服务端语音帧真正开始播放时回调，用于判断本次 speak 是否真的有声

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { RefreshCw, Sparkles } from "lucide-react";
 import { destroyXingyunAgent, mountXingyunAgent, type XingyunAgentProfile } from "@/lib/xingyun/agent";
 
@@ -29,8 +29,11 @@ const PROFILE_TEXT: Record<XingyunAgentProfile, { name: string; loading: string;
 /**
  * 魔珐星云具身智能体 3D 渲染容器（诗仙 / 小美共用）。
  * 容器必须有明确宽高，否则 SDK 画布会折叠为零尺寸。
+ *
+ * 使用 memo 隔离父级高频状态：父组件（消息流式更新等）重渲染时不再触碰 SDK 子树，
+ * 避免 React 每帧 diff 抢占主线程导致 WebGL 丢帧。
  */
-export function XingyunAvatar({ height = 500, profile = "shixian", scale = 1, shiftX = 0 }: Props) {
+export const XingyunAvatar = memo(function XingyunAvatar({ height = 500, profile = "shixian", scale = 1, shiftX = 0 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(true);
   const [progress, setProgress] = useState(0);
@@ -109,7 +112,7 @@ export function XingyunAvatar({ height = 500, profile = "shixian", scale = 1, sh
         </div>
       )}
 
-      {error && (
+      {error && !ready && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-5 bg-black/50 backdrop-blur-sm text-center">
           <Sparkles className="w-5 h-5 text-[#D2A053]" />
           <p className="text-[11px] leading-relaxed text-white/70">{error}</p>
@@ -125,11 +128,11 @@ export function XingyunAvatar({ height = 500, profile = "shixian", scale = 1, sh
       )}
     </div>
   );
-}
+});
 
 /**
  * 「小美」渲染容器：固定使用小美 profile，保持与「诗仙」一致的加载与重试体验。
  */
-export function XiaomeiAvatar({ height = 500 }: { height?: number }) {
+export const XiaomeiAvatar = memo(function XiaomeiAvatar({ height = 500 }: { height?: number }) {
   return <XingyunAvatar height={height} profile="xiaomei" scale={0.9} />;
-}
+});

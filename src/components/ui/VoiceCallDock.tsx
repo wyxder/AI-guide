@@ -314,12 +314,13 @@ export function VoiceCallDock({
                   transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
                 />
               ) : recording ? (
-                <span className="flex items-end gap-[4px] h-[22px]">
+                <span className="flex items-center gap-[4px] h-[22px]">
                   {[0, 1, 2, 3].map((i) => (
                     <motion.span
                       key={i}
                       className="w-[3.5px] rounded-full bg-white"
-                      animate={{ height: [7, 20, 9, 23, 7] }}
+                      style={{ height: 22, transformOrigin: "center" }}
+                      animate={{ scaleY: [0.3, 0.9, 0.4, 1, 0.3] }}
                       transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 }}
                     />
                   ))}

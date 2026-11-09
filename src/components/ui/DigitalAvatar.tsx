@@ -379,15 +379,16 @@ function AvatarSVG({ state, mouthOpen, mouthPathOverride, avatarStyle, idSuffix 
 
 // ── Voice wave ────────────────────────────────────────────────────────────────
 export function VoiceWave({ active, color = "rgba(210,160,83,0.85)" }: { active: boolean; color?: string }) {
+  // 用 scaleY 代替 height 动画：纯合成层变换，不触发每帧重排，避免数字人说话时掉帧
   return (
     <div className="flex items-center justify-center gap-[3px]" style={{ height: 28 }}>
       {Array.from({ length: 11 }).map((_, i) => (
         <motion.div key={i} className="rounded-full flex-shrink-0"
-          style={{ width: 3, background: color }}
+          style={{ width: 3, height: 20, transformOrigin: "center", background: color }}
           animate={active ? {
-            height: [3, 6 + Math.abs(Math.sin(i * 0.9)) * 14, 3],
+            scaleY: [0.15, 0.3 + Math.abs(Math.sin(i * 0.9)) * 0.7, 0.15],
             opacity: [0.45, 1, 0.45],
-          } : { height: 3, opacity: 0.25 }}
+          } : { scaleY: 0.15, opacity: 0.25 }}
           transition={{ duration: 0.5 + i * 0.04, delay: i * 0.06, repeat: active ? Infinity : 0, ease: "easeInOut" }} />
       ))}
     </div>
@@ -404,6 +405,17 @@ function DigitalAvatarComponent({ state, size = "md", audioElement, avatarStyle 
   const px = SIZES_PX[size];
   const idSuffix = useId().replace(/:/g, "");
   const p = PALETTE[state];
+  const isLive2D = !!avatarStyle && avatarStyle.startsWith("live2d_");
+  const isXiaomei = isXiaomeiAvatarStyle(avatarStyle);
+  const isXingyun = isXingyunAvatarStyle(avatarStyle) || isXiaomei;
+  const isUrl = !isLive2D && !!avatarStyle && (avatarStyle.startsWith("http") || avatarStyle.startsWith("/") || avatarStyle.includes("."));
+  const isVideo = isUrl && (avatarStyle.endsWith(".mp4") || avatarStyle.endsWith(".webm") || avatarStyle.endsWith(".mov") || avatarStyle.includes("video"));
+  /**
+   * 只有内置 SVG 形象需要前端口型同步。
+   * 星云 / Live2D / 视频形象由自身渲染管线驱动口型，若仍以 60fps 更新状态，
+   * 会让 React 每帧重渲染包住 WebGL 画布的子树，抢占主线程导致 SDK 丢帧卡顿（20008）。
+   */
+  const needsLipSync = !isXingyun && !isLive2D && !isUrl;
   const [mouthOpen, setMouthOpen] = useState(false);
   const [mouthAmplitude, setMouthAmplitude] = useState(0); // 0–1 normalized loudness
   const animFrameRef = useRef<number | null>(null);
@@ -411,9 +423,9 @@ function DigitalAvatarComponent({ state, size = "md", audioElement, avatarStyle 
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
-  // Web Audio API analyser for dynamic lip-sync
+  // Web Audio API analyser for dynamic lip-sync（仅内置 SVG 形象启用）
   useEffect(() => {
-    if (!audioElement) {
+    if (!needsLipSync || !audioElement) {
       setMouthOpen(false);
       setMouthAmplitude(0);
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
@@ -479,18 +491,18 @@ function DigitalAvatarComponent({ state, size = "md", audioElement, avatarStyle 
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
-  }, [audioElement, state]);
+  }, [audioElement, state, needsLipSync]);
 
   // Fallback fixed-interval toggle when no audio element
   useEffect(() => {
-    if (audioElement) return; // Web Audio API takes over
+    if (audioElement || !needsLipSync) return; // Web Audio API / 自身渲染管线接管
     if (state !== "speaking") {
       setMouthOpen(false);
       return;
     }
     const id = setInterval(() => setMouthOpen((v) => !v), 140);
     return () => clearInterval(id);
-  }, [state, audioElement]);
+  }, [state, audioElement, needsLipSync]);
 
   // Dynamic mouth path based on amplitude
   const getDynamicMouthPath = (st: AvatarState, open: boolean, amplitude: number): string => {
@@ -502,17 +514,11 @@ function DigitalAvatarComponent({ state, size = "md", audioElement, avatarStyle 
     return getMouthPath(st, open);
   };
 
-  const isLive2D = !!avatarStyle && avatarStyle.startsWith("live2d_");
-  const isXiaomei = isXiaomeiAvatarStyle(avatarStyle);
-  const isXingyun = isXingyunAvatarStyle(avatarStyle) || isXiaomei;
   const starcloudImage = isXiaomei ? XIAOMEI_AVATAR_IMAGE : XINGYUN_AVATAR_IMAGE;
   const starcloudAlt = isXiaomei ? "小美数字人" : "诗仙数字人";
   const live2DPortrait = isLive2D
     ? `/sentio/characters/free/${avatarStyle.replace("live2d_", "")}/thumb.webp`
     : "";
-
-  const isUrl = !isLive2D && !!avatarStyle && (avatarStyle.startsWith("http") || avatarStyle.startsWith("/") || avatarStyle.includes("."));
-  const isVideo = isUrl && !!avatarStyle && (avatarStyle.endsWith(".mp4") || avatarStyle.endsWith(".webm") || avatarStyle.endsWith(".mov") || avatarStyle.includes("video"));
 
   if (size === "hero" || size === "desktop-hero") {
     const avatarWidth = isXingyun
@@ -528,17 +534,17 @@ function DigitalAvatarComponent({ state, size = "md", audioElement, avatarStyle 
 
     return (
       <div className="relative flex flex-col items-center select-none pointer-events-none">
-        {/* Outer ambient glow */}
+        {/* Outer ambient glow（星云形象用静态光晕，避免每帧重绘大范围径向渐变抢占 GPU） */}
         <motion.div className="absolute rounded-full pointer-events-none"
           style={{ width: avatarWidth + 60, height: avatarHeight + 60, top: -30, left: -30,
             background: `radial-gradient(ellipse at center, ${p.aura} 0%, transparent 68%)` }}
-          animate={{ scale: [1, 1.1, 1], opacity: [0.65, 1, 0.65] }}
-          transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }} />
-        {/* Avatar */}
+          animate={isXingyun ? { scale: 1, opacity: 0.85 } : { scale: [1, 1.1, 1], opacity: [0.65, 1, 0.65] }}
+          transition={isXingyun ? { duration: 0 } : { duration: 3.2, repeat: Infinity, ease: "easeInOut" }} />
+        {/* Avatar：星云画布不做位移/缩放动画，防止 WebGL 输出层反复重合成 */}
         <motion.div style={{ width: avatarWidth, height: avatarHeight }}
           className="relative flex items-center justify-center overflow-hidden bg-transparent"
-          animate={state === "speaking" ? { y: [0, -3, 0] } : { y: 0 }}
-          transition={{ duration: 1.3, repeat: state === "speaking" ? Infinity : 0, ease: "easeInOut" }}>
+          animate={!isXingyun && state === "speaking" ? { y: [0, -3, 0] } : { y: 0 }}
+          transition={{ duration: 1.3, repeat: !isXingyun && state === "speaking" ? Infinity : 0, ease: "easeInOut" }}>
           {isXingyun ? (
             <XingyunAvatar
               height={avatarHeight}

@@ -1064,4 +1064,14 @@ body > .avatar-sdk-widget-container {
   pointer-events: none !important;
 }
 
+/* 隔离 SDK 画布的布局/绘制上下文，减少页面重渲染（气泡流式更新）时的重排重绘 */
+.xingyun-avatar-stage {
+  contain: layout style;
+  isolation: isolate;
+}
+
+.xingyun-avatar-stage canvas {
+  display: block;
+}
+
 
