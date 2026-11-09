@@ -301,7 +301,9 @@ export function ProfileScreen() {
     const homeCity = regionParts[regionParts.length - 1];
     if (homeCity) {
       citySet.add(homeCity);
-      const province = PROVINCE_BY_CITY[homeCity];
+      const province =
+        PROVINCE_BY_CITY[homeCity] ||
+        (regionParts.length > 1 ? `${regionParts[0].replace(/(省|市)$/, "")}省` : "");
       if (province) provinceSet.add(province);
     }
 

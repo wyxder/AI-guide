@@ -17,9 +17,7 @@ import { toast } from "sonner";
 import {
   interruptXingyun,
   speakWithXingyun,
-  startXingyunASR,
   stopXingyunASR,
-  subscribeXingyunASR,
   subscribeXingyunConversation,
   subscribeXingyunVoiceStart,
 } from "@/lib/xingyun/agent";
@@ -63,12 +61,23 @@ async function convertRecordingToWav(blob: Blob, targetRate = 16000): Promise<Bl
   const data: Float32Array[] = [];
   for (let c = 0; c < channels; c++) data.push(decoded.getChannelData(c));
 
-  const length = Math.floor(decoded.duration * targetRate);
+  // 裁掉首尾静音：缩短上传体积，同时避免 ASR 把长静音当成有效音频
+  const mono = data[0];
+  const TRIM_THRESHOLD = 0.012;
+  let firstVoice = 0;
+  let lastVoice = mono.length - 1;
+  while (firstVoice < mono.length && Math.abs(mono[firstVoice]) < TRIM_THRESHOLD) firstVoice++;
+  while (lastVoice > firstVoice && Math.abs(mono[lastVoice]) < TRIM_THRESHOLD) lastVoice--;
+  const padSamples = Math.floor(decoded.sampleRate * 0.12);
+  const startSample = Math.max(0, firstVoice - padSamples);
+  const endSample = Math.min(mono.length - 1, lastVoice + padSamples);
+
+  const length = Math.max(1, Math.floor(((endSample - startSample) / decoded.sampleRate) * targetRate));
   const out = new Float32Array(length);
   const ratio = decoded.sampleRate / targetRate;
 
   for (let i = 0; i < length; i++) {
-    const pos = i * ratio;
+    const pos = startSample + i * ratio;
     const i0 = Math.floor(pos);
     const i1 = Math.min(i0 + 1, decoded.length - 1);
     const frac = pos - i0;
@@ -537,33 +546,9 @@ export function QAScreen() {
     });
   }, [isStarcloudAvatar]);
 
-  // 「诗仙 / 小美」：使用星云自带 ASR，识别完成自动发送气泡
-  const xingyunListeningRef = useRef(false);
-  const sendMessageRef = useRef<(q: string) => void>(() => {});
+  // 语音输入统一走「本地录音 + 服务端 ASR」，切换形象时结束可能残留的星云识别，避免占用麦克风
   useEffect(() => {
-    sendMessageRef.current = sendMessage as unknown as (q: string) => void;
-  });
-  useEffect(() => {
-    if (!isStarcloudAvatar) return;
-    const unsubscribe = subscribeXingyunASR((result) => {
-      if (!xingyunListeningRef.current) return;
-      const text = (result?.text || "").trim();
-      if (!text) return;
-      setInput(text);
-      if (result.isFinal) {
-        xingyunListeningRef.current = false;
-        setRecording(false);
-        stopXingyunASR();
-        // 星云识别为实时结果：短暂展示识别完成进度再发送气泡
-        setRecognizing(true);
-        sendMessageRef.current(text);
-        window.setTimeout(() => setRecognizing(false), 700);
-      }
-    });
-    // 切换形象时结束进行中的星云语音识别，避免残留状态
     return () => {
-      unsubscribe();
-      xingyunListeningRef.current = false;
       setRecording(false);
       stopXingyunASR();
     };
@@ -963,7 +948,13 @@ export function QAScreen() {
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        audio: {
+          channelCount: 1,
+          sampleRate: 16000,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
       });
     } catch (err) {
       console.error("Mic access denied:", err);
@@ -974,10 +965,13 @@ export function QAScreen() {
     stopAudio();
     abortVoiceRef.current = false;
 
-    const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-      ? "audio/webm;codecs=opus"
-      : "audio/webm";
-    const recorder = new MediaRecorder(stream, { mimeType });
+    const mimeCandidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
+    const mimeType = mimeCandidates.find((type) => MediaRecorder.isTypeSupported(type)) || "";
+    // 低码率 opus：体积更小、上传更快，16k 单声道足够 ASR 使用
+    const recorder = new MediaRecorder(stream, {
+      ...(mimeType ? { mimeType } : {}),
+      audioBitsPerSecond: 32000,
+    });
     audioChunksRef.current = [];
 
     recorder.ondataavailable = (event) => {
@@ -992,8 +986,8 @@ export function QAScreen() {
         return;
       }
 
-      const rawBlob = new Blob(audioChunksRef.current, { type: mimeType });
-      if (rawBlob.size < 4000) {
+      const rawBlob = new Blob(audioChunksRef.current, { type: mimeType || "audio/webm" });
+      if (rawBlob.size < 1200) {
         toast.error("未检测到有效语音，请再说一次", { id: VOICE_TOAST_ID, duration: 2400 });
         return;
       }
@@ -1008,7 +1002,8 @@ export function QAScreen() {
       const uploadBlob = wavBlob || rawBlob;
       try {
         const formData = new FormData();
-        formData.append("file", uploadBlob, wavBlob ? "voice.wav" : "voice.webm");
+        const rawExt = mimeType.includes("mp4") ? "m4a" : mimeType.includes("ogg") ? "ogg" : "webm";
+        formData.append("file", uploadBlob, wavBlob ? "voice.wav" : `voice.${rawExt}`);
         const res = await request("/api/siliconflow/asr", { method: "POST", body: formData });
         const data = await res.json().catch(() => ({}));
         const text = String(data?.text || "").trim();
@@ -1026,18 +1021,21 @@ export function QAScreen() {
       }
     };
 
-    recorder.start(200);
+    recorder.start(100);
     mediaRecorderRef.current = recorder;
     setRecording(true);
 
-    // 静音检测：说完约 1.1 秒自动结束并上传识别，最长 15 秒
+    // 静音检测：说完约 0.75 秒自动结束并上传识别，最长 12 秒
     let raf = 0;
     let ctx: AudioContext | undefined;
     let speechStarted = false;
     let silenceSince = 0;
+    let speechFrames = 0;
+    let noiseFloor = 0;
     const startedAt = performance.now();
-    const SILENCE_MS = 1100;
-    const MAX_MS = 15000;
+    const SILENCE_MS = 750;
+    const MAX_MS = 12000;
+    const NO_SPEECH_MS = 8000;
 
     try {
       ctx = new AudioContext();
@@ -1058,17 +1056,35 @@ export function QAScreen() {
         }
         const rms = Math.sqrt(sum / buffer.length);
         const now = performance.now();
-        if (rms > 0.05) {
+
+        // 自适应底噪：快速跟随下降（安静环境），缓慢上升（避免人声被当成底噪）
+        noiseFloor = noiseFloor === 0
+          ? rms
+          : rms < noiseFloor
+            ? noiseFloor * 0.9 + rms * 0.1
+            : noiseFloor * 0.995 + 0.00005;
+        const threshold = speechStarted
+          ? Math.max(0.008, noiseFloor * 1.8)
+          : Math.max(0.012, noiseFloor * 2.4);
+
+        if (rms > threshold) {
+          speechFrames = Math.min(speechFrames + 1, 4);
+        } else {
+          speechFrames = Math.max(speechFrames - 1, 0);
+        }
+
+        if (speechFrames >= 2) {
           speechStarted = true;
           silenceSince = 0;
         } else if (speechStarted && !silenceSince) {
           silenceSince = now;
         }
+
         if ((silenceSince && now - silenceSince >= SILENCE_MS) || now - startedAt >= MAX_MS) {
           finishCallRecording();
           return;
         }
-        if (!speechStarted && now - startedAt >= 6000) {
+        if (!speechStarted && now - startedAt >= NO_SPEECH_MS) {
           finishCallRecording();
           return;
         }
@@ -1086,39 +1102,19 @@ export function QAScreen() {
     // 识别中或快速连点时不重复启动
     if (voiceStartingRef.current || recognizing) return;
     voiceStartingRef.current = true;
-    window.setTimeout(() => { voiceStartingRef.current = false; }, 500);
-
-    // 「诗仙 / 小美」：走魔珐星云自带语音识别（按当前形象指定 profile）
-    if (isStarcloudAvatar) {
-      const xingyunProfile = isXiaomeiAvatar ? "xiaomei" as const : "shixian" as const;
-      if (recording) {
-        xingyunListeningRef.current = false;
-        setRecording(false);
-        await stopXingyunASR(xingyunProfile);
-        return;
-      }
-      stopAudio();
-      interruptXingyun(xingyunProfile);
-      const ok = await startXingyunASR(xingyunProfile);
-      if (!ok) {
-        toast.error("星云语音识别启动失败，请稍后重试", { id: VOICE_TOAST_ID, duration: 2400 });
-        return;
-      }
-      xingyunListeningRef.current = true;
-      setRecording(true);
-      // 兜底：15 秒仍未返回最终结果则自动结束，避免一直处于聆听态
-      window.setTimeout(() => {
-        if (!xingyunListeningRef.current) return;
-        xingyunListeningRef.current = false;
-        setRecording(false);
-        stopXingyunASR(xingyunProfile);
-      }, 15000);
-      return;
-    }
+    window.setTimeout(() => { voiceStartingRef.current = false; }, 400);
 
     if (recording) {
       finishCallRecording();
       return;
+    }
+
+    // 所有形象统一走本地录音 + 服务端 ASR：灵敏度、静音判定与延迟都可控，
+    // 同时先停掉星云 SDK 自带识别，避免抢占麦克风导致「一直聆听却识别不到」
+    if (isStarcloudAvatar) {
+      const xingyunProfile = isXiaomeiAvatar ? "xiaomei" as const : "shixian" as const;
+      interruptXingyun(xingyunProfile);
+      stopXingyunASR(xingyunProfile);
     }
     await startCallRecording();
   };
