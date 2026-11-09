@@ -543,8 +543,8 @@ function DigitalAvatarComponent({ state, size = "md", audioElement, avatarStyle 
             <XingyunAvatar
               height={avatarHeight}
               profile={isXiaomei ? "xiaomei" : "shixian"}
-              /* 小美控制台默认「透明背景-半身」构图，整体微缩 10% 确保完整显示 */
-              scale={isXiaomei ? 0.9 : 1}
+              /* 小美控制台默认「透明背景-半身」构图，按 1:1 呈现即保持半身站姿 */
+              scale={1}
               /* 诗仙控制台构图人物略偏左，向右微调使其在画面中水平居中 */
               shiftX={isXiaomei ? 0 : 5}
             />

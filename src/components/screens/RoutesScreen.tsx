@@ -5,7 +5,7 @@ import {
   Compass, ArrowRight, Loader2, MapPin, Clock, ChevronLeft, ChevronRight,
   Share2, MessageSquare, ShieldAlert, Award, Search, Send,
   Volume2, VolumeX, Eye, BookOpen, Navigation, Landmark, Sparkles, Check,
-  X, Smile, Image as ImageIcon, Film, Mic, Menu, Bot, User
+  X, Smile, Image as ImageIcon, Film, Mic, Menu, Bot, User, Route
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -1403,15 +1403,17 @@ export function RoutesScreen() {
           {/* Map Top horizontal Popular Spots Cards overlay (Aligned to left, avoiding top-right controls) */}
           <div className="absolute top-4 left-4 z-25 flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none pb-1.5 snap-x w-[calc(100%-40px)] sm:w-[calc(100%-65px)] md:max-w-[calc(100%-180px)]">
             {currentSpots.slice(0, 6).map((spot) => {
-              const detailId = spot.detailSpotId;
-              if (detailId === undefined) {
-                throw new Error(`热门景点详情未配置：${spot.name}`);
-              }
               const isActive = activeSpot?.id === spot.id;
               return (
                 <button
                   key={spot.id}
-                  onClick={() => router.push(`/spots/${detailId}`)}
+                  onClick={() => {
+                    setActiveSpot(spot);
+                    if (mapInstanceRef.current) {
+                      mapInstanceRef.current.setZoomAndCenter(16, [spot.lng, spot.lat], false, 300);
+                      showAmapInfoWindow(spot);
+                    }
+                  }}
                   className={`flex-shrink-0 w-[100px] sm:w-[140px] rounded-xl overflow-hidden bg-white/95 backdrop-blur-md border transition-all text-left shadow-md flex flex-col snap-start ${
                     isActive ? "border-[#4F6F52] ring-2 ring-[#4F6F52]/20" : "border-zinc-200/40"
                   }`}
@@ -1917,44 +1919,47 @@ export function RoutesScreen() {
               exit={{ scale: 0.92, opacity: 0, y: 20 }}
               transition={{ type: "spring", stiffness: 300, damping: 28 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-2xl max-h-[85vh] rounded-3xl p-6 bg-white border border-zinc-200 shadow-2xl flex flex-col overflow-hidden text-zinc-800"
+              className="w-full max-w-2xl max-h-[85vh] rounded-[28px] bg-white border border-zinc-200/80 ring-1 ring-white/60 shadow-[0_30px_80px_-20px_rgba(2,6,23,0.55)] flex flex-col overflow-hidden text-zinc-800"
             >
               {/* Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-zinc-100 flex-shrink-0">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-2xl bg-[#3A4D39] text-[#D2A053] flex items-center justify-center shadow-md">
-                    <Sparkles className="w-5 h-5 animate-pulse" />
+              <div className="relative flex items-center justify-between px-6 py-5 border-b border-zinc-100 flex-shrink-0 bg-gradient-to-r from-sky-50 via-white to-indigo-50/70">
+                <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#0EA5E9] via-[#38BDF8] to-[#6366F1]" aria-hidden />
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#0EA5E9] to-[#6366F1] text-white flex items-center justify-center shadow-lg shadow-sky-500/30">
+                    <Route className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-base text-zinc-900 tracking-wide" style={{ fontFamily: "var(--font-noto-serif)" }}>
+                    <h3 className="font-extrabold text-lg text-zinc-900 tracking-wide" style={{ fontFamily: "var(--font-noto-serif)" }}>
                       AI 智游路线合集与历史行程库
                     </h3>
-                    <p className="text-xs text-zinc-500">挑选精选高能打卡方案，一键载入 3D 轨迹与伴游解说</p>
+                    <p className="text-[13px] text-zinc-600 mt-0.5">挑选精选高能打卡方案，一键载入 3D 轨迹与伴游解说</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowRouteHistoryModal(false)}
-                  className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center text-zinc-400 hover:text-zinc-700 transition-colors cursor-pointer"
+                  className="w-9 h-9 rounded-full bg-white/90 border border-zinc-200 hover:bg-zinc-100 flex items-center justify-center text-zinc-500 hover:text-zinc-800 transition-colors cursor-pointer flex-shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Category Filter Tabs */}
-              <div className="px-6 pt-3 pb-2 border-b border-zinc-100 flex items-center gap-2 overflow-x-auto scrollbar-none flex-shrink-0">
+              <div className="px-6 pt-4 pb-3 border-b border-zinc-100 flex items-center gap-2 overflow-x-auto scrollbar-none flex-shrink-0">
                 {[
-                  { id: "instagrammable", label: "📸 网红打卡", activeBg: "bg-pink-500 text-white" },
-                  { id: "nature", label: "🏔️ 山水自然", activeBg: "bg-emerald-600 text-white" },
-                  { id: "family", label: "👨‍👩‍👧 亲子游览", activeBg: "bg-indigo-600 text-white" },
-                  { id: "special_forces", label: "⚡ 特种兵", activeBg: "bg-amber-500 text-black font-black" },
+                  { id: "instagrammable", label: "📸 网红打卡", activeBg: "bg-gradient-to-r from-rose-500 to-pink-500 shadow-rose-500/30" },
+                  { id: "nature", label: "🏔️ 山水自然", activeBg: "bg-gradient-to-r from-emerald-500 to-teal-500 shadow-emerald-500/30" },
+                  { id: "family", label: "👨‍👩‍👧 亲子游览", activeBg: "bg-gradient-to-r from-sky-500 to-indigo-500 shadow-sky-500/30" },
+                  { id: "special_forces", label: "⚡ 特种兵", activeBg: "bg-gradient-to-r from-amber-400 to-orange-500 shadow-amber-500/30" },
                 ].map((tab) => {
                   const isActive = historyCategoryTab === tab.id;
                   return (
                     <button
                       key={tab.id}
                       onClick={() => setHistoryCategoryTab(tab.id)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex-shrink-0 cursor-pointer ${
-                        isActive ? `${tab.activeBg} shadow-sm` : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex-shrink-0 cursor-pointer ${
+                        isActive
+                          ? `${tab.activeBg} text-white shadow-md`
+                          : "bg-white text-zinc-600 border border-zinc-200 hover:border-sky-300 hover:text-sky-700"
                       }`}
                     >
                       {tab.label}
@@ -1964,7 +1969,7 @@ export function RoutesScreen() {
               </div>
 
               {/* Body Content - Timeline Route Diagram */}
-              <div className="flex-1 overflow-y-auto p-5 space-y-4 scrollbar-thin">
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 scrollbar-thin bg-zinc-50/50">
                 {(() => {
                   const categoryRoutes: Record<string, any> = {
                     instagrammable: {
@@ -2038,26 +2043,34 @@ export function RoutesScreen() {
                   return (
                     <div className="space-y-4">
                       {/* Route Header */}
-                      <div className="flex items-center justify-between p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200/80">
-                        <div>
-                          <h4 className="font-extrabold text-sm text-zinc-900" style={{ fontFamily: "var(--font-noto-serif)" }}>
+                      <div className="relative overflow-hidden flex items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-sky-50 to-indigo-50/70 border border-sky-100">
+                        <span className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-[#0EA5E9] to-[#6366F1]" aria-hidden />
+                        <div className="pl-1.5 min-w-0">
+                          <h4 className="font-extrabold text-[15px] text-zinc-900 leading-snug" style={{ fontFamily: "var(--font-noto-serif)" }}>
                             {activeRouteItem.title}
                           </h4>
-                          <span className="text-[11px] font-mono text-zinc-500 mt-0.5 block">全程约 {activeRouteItem.distance} · 覆盖 {activeRouteItem.spots.length} 大景观</span>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <span className="text-[11px] font-semibold text-sky-800 bg-white/80 border border-sky-100 rounded-full px-2 py-0.5">
+                              全程约 {activeRouteItem.distance}
+                            </span>
+                            <span className="text-[11px] font-semibold text-indigo-800 bg-white/80 border border-indigo-100 rounded-full px-2 py-0.5">
+                              覆盖 {activeRouteItem.spots.length} 大景观
+                            </span>
+                          </div>
                         </div>
                       </div>
 
                       {/* Vertical Timeline Diagram */}
-                      <div className="relative border-l-2 border-[#D2A053]/40 ml-0 pl-3 space-y-4 py-2">
+                      <div className="relative border-l-2 border-sky-200 ml-0 pl-4 space-y-4 py-2">
                         {activeRouteItem.spots.map((spotObj: any, idx: number) => (
                           <div key={idx} className="relative group">
                             {/* Timeline Node Number Badge */}
-                            <div className="absolute -left-[23px] top-2 w-5.5 h-5.5 rounded-full bg-[#D2A053] text-black font-black text-[10px] flex items-center justify-center border-2 border-white shadow-md">
+                            <div className="absolute -left-[26px] top-2 w-6 h-6 rounded-full bg-gradient-to-br from-[#0EA5E9] to-[#6366F1] text-white font-black text-[10px] flex items-center justify-center border-2 border-white shadow-md shadow-sky-500/30">
                               {idx + 1}
                             </div>
 
                             {/* Spot Card */}
-                            <div className="bg-white border border-zinc-200/90 rounded-2xl p-3.5 shadow-xs flex items-center gap-3.5 hover:border-[#D2A053] transition-all">
+                            <div className="bg-white border border-zinc-200/90 rounded-2xl p-3.5 shadow-sm flex items-center gap-3.5 hover:border-sky-300 hover:shadow-md transition-all">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={spotObj.img || "/images/spots/10001.webp"}
@@ -2100,18 +2113,18 @@ export function RoutesScreen() {
                                 }}
                               >
                                 <div className="flex items-center justify-between gap-2">
-                                  <h5 className="font-extrabold text-xs text-zinc-900 leading-snug hover:text-[#D2A053] transition-colors">{spotObj.name}</h5>
-                                  <span className="text-[9px] font-bold text-[#D2A053] bg-amber-50 px-2 py-0.5 rounded-full flex-shrink-0">
+                                  <h5 className="font-extrabold text-[13px] text-zinc-900 leading-snug hover:text-sky-600 transition-colors">{spotObj.name}</h5>
+                                  <span className="text-[10px] font-bold text-sky-700 bg-sky-50 border border-sky-100 px-2 py-0.5 rounded-full flex-shrink-0">
                                     建议打卡 40分钟
                                   </span>
                                 </div>
-                                <p className="text-[10px] text-zinc-600 mt-1 leading-relaxed">{spotObj.desc || "历史底蕴深厚，景色独特别致，游览打卡首选之地"}</p>
+                                <p className="text-[11px] text-zinc-600 mt-1 leading-relaxed">{spotObj.desc || "历史底蕴深厚，景色独特别致，游览打卡首选之地"}</p>
                               </div>
                             </div>
 
                             {/* Distance Connector text between nodes */}
                             {idx < activeRouteItem.spots.length - 1 && (
-                              <div className="text-[9.5px] font-mono text-zinc-400 my-1 pl-1 flex items-center gap-1">
+                              <div className="text-[10px] font-medium text-zinc-500 my-1 pl-1 flex items-center gap-1">
                                 <span>🚗 距下个景点约 2.4km</span>
                                 <span>·</span>
                                 <span>预计耗时 8分钟</span>
@@ -2122,25 +2135,25 @@ export function RoutesScreen() {
                       </div>
 
                       {/* AI Advice Box */}
-                      <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-xs text-amber-900 leading-relaxed flex items-start gap-2.5">
+                      <div className="p-3.5 rounded-2xl bg-sky-50/80 border border-sky-200/80 text-[11.5px] text-sky-950 leading-relaxed flex items-start gap-2.5">
                         <span className="text-base flex-shrink-0">💡</span>
                         <div>
-                          <strong className="font-extrabold text-amber-950 block mb-0.5">AI 智能路线规划建议：</strong>
+                          <strong className="font-extrabold text-sky-900 block mb-0.5">AI 智能路线规划建议：</strong>
                           <span>{activeRouteItem.advice}</span>
                         </div>
                       </div>
 
                       {/* Action Button */}
-                      <div className="pt-2 flex justify-end">
+                      <div className="pt-2">
                         <button
                           onClick={() => {
                             setActiveRoute(activeRouteItem.routeData as GeneratedRoute);
                             setShowRouteHistoryModal(false);
                             toast.success(`已载入「${activeRouteItem.title}」至地图！`);
                           }}
-                          className="w-full py-3 rounded-xl bg-[#3A4D39] text-white text-xs font-extrabold hover:bg-[#4F6F52] shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                          className="w-full py-3 rounded-xl bg-gradient-to-r from-[#0EA5E9] to-[#6366F1] hover:from-[#38BDF8] hover:to-[#818CF8] text-white text-[13px] font-extrabold shadow-lg shadow-sky-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
                         >
-                          <Compass className="w-4 h-4 text-[#D2A053]" />
+                          <Compass className="w-4 h-4" />
                           载入地图并开始游览
                         </button>
                       </div>

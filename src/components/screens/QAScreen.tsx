@@ -21,6 +21,7 @@ import {
   stopXingyunASR,
   subscribeXingyunASR,
   subscribeXingyunConversation,
+  subscribeXingyunVoiceStart,
 } from "@/lib/xingyun/agent";
 import { isXingyunAvatarStyle, XINGYUN_AVATAR_STYLE } from "@/lib/xingyun/preset";
 import { isXiaomeiAvatarStyle } from "@/lib/xiaomei/preset";
@@ -283,8 +284,19 @@ export function QAScreen() {
   } | null>(null);
   const abortVoiceRef = useRef(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  // 星云「语音真正开始播放」标记 + 无声兜底定时器（仅小美使用）
+  const xingyunVoiceStartedRef = useRef(false);
+  const xingyunSilentTimerRef = useRef<number | null>(null);
+
+  const clearXingyunSilentTimer = () => {
+    if (xingyunSilentTimerRef.current !== null) {
+      window.clearTimeout(xingyunSilentTimerRef.current);
+      xingyunSilentTimerRef.current = null;
+    }
+  };
 
   const stopAudio = () => {
+    clearXingyunSilentTimer();
     if (audioRef.current) {
       try {
         audioRef.current.pause();
@@ -319,6 +331,20 @@ export function QAScreen() {
   // Background selection state
   const [bgImage, setBgImage] = useState<string>("/background/北京.webp");
   const [showBgMenu, setShowBgMenu] = useState(false);
+  // 移动端键盘高度（visualViewport 收窄量）
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      const inset = window.innerHeight - vv.height - vv.offsetTop;
+      setKeyboardHeight(inset > 140 ? vv.height : 0);
+    };
+    vv.addEventListener("resize", onResize);
+    onResize();
+    return () => vv.removeEventListener("resize", onResize);
+  }, []);
 
   // 音色选择状态：默认 SophNet CosyVoice-v2 的龙小淳（温柔知性女声）
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>(() => {
@@ -343,6 +369,8 @@ export function QAScreen() {
 
   // Persona selection state（默认展示「诗仙·李白」，导游界面与语音通话共用）
   const [selectedStyle, setSelectedStyle] = useState<string>(XINGYUN_AVATAR_STYLE);
+  // 用户是否主动切换过形象：未切换时始终保持默认「诗仙·李白」
+  const userPickedAvatarRef = useRef(false);
   const [showPersonaMenu, setShowPersonaMenu] = useState(false);
   const [allAvatars, setAllAvatars] = useState<any[]>([]);
   const [customAvatars, setCustomAvatars] = useState<any[]>([]);
@@ -375,7 +403,7 @@ export function QAScreen() {
         if (Array.isArray(data)) {
           setAllAvatars(data);
           const defaultAvatar = data.find((a) => a.isDefault);
-          if (defaultAvatar) {
+          if (defaultAvatar && userPickedAvatarRef.current) {
             setSelectedStyle(defaultAvatar.avatarStyle);
             setAvatarConfig(defaultAvatar);
           }
@@ -421,6 +449,7 @@ export function QAScreen() {
   }, []);
 
   const selectAvatar = (styleUrlOrId: string) => {
+    userPickedAvatarRef.current = true;
     setSelectedStyle(styleUrlOrId);
     const found = [...allAvatars, ...customAvatars].find((a) => a.avatarStyle === styleUrlOrId);
     if (found) {
@@ -476,17 +505,18 @@ export function QAScreen() {
   };
 
   // Active avatar config sync
+  // Active avatar config sync：仅同步音色等元数据，形象默认固定为「诗仙·李白」，不被服务端默认值覆盖
   useEffect(() => {
-    if (avatarConfig?.avatarStyle) {
-      setSelectedStyle(avatarConfig.avatarStyle);
-    }
+    if (!avatarConfig?.avatarStyle) return;
+    if (!userPickedAvatarRef.current) return;
+    setSelectedStyle(avatarConfig.avatarStyle);
   }, [avatarConfig]);
 
   useEffect(() => {
     request("/api/qa/avatar-active")
       .then((r) => r.json())
       .then((d) => {
-        if (d && d.avatarStyle) {
+        if (d && d.avatarStyle && userPickedAvatarRef.current) {
           setAvatarConfig(d);
         }
       })
@@ -539,6 +569,26 @@ export function QAScreen() {
     };
   }, [isStarcloudAvatar]);
 
+  // 星云播报是否真的发出了声音：用于「小美无 TTS」时的本地语音兜底
+  useEffect(() => {
+    if (!isStarcloudAvatar) return;
+    return subscribeXingyunVoiceStart(() => {
+      xingyunVoiceStartedRef.current = true;
+      if (xingyunSilentTimerRef.current !== null) {
+        window.clearTimeout(xingyunSilentTimerRef.current);
+        xingyunSilentTimerRef.current = null;
+      }
+    });
+  }, [isStarcloudAvatar]);
+
+  // 卸载时清理无声兜底定时器，避免离开页面后继续播放语音
+  useEffect(() => () => {
+    if (xingyunSilentTimerRef.current !== null) {
+      window.clearTimeout(xingyunSilentTimerRef.current);
+      xingyunSilentTimerRef.current = null;
+    }
+  }, []);
+
   const [avatarWidth, setAvatarWidth] = useState(450); // Default to a wider layout (450px)
   const panelRef = useRef<HTMLDivElement>(null);
   const isResizingRef = useRef(false);
@@ -582,6 +632,8 @@ export function QAScreen() {
     setShowBgMenu(false);
     setShowVoiceMenu(false);
     setShowPersonaMenu(false);
+    // 仅在进入语音通话时自动开启摄像头小窗
+    setVideoChatEnabled(true);
     setInCall(true);
   };
 
@@ -597,7 +649,8 @@ export function QAScreen() {
   };
 
   const callGreeting = () => {
-    speak("您好，我是旅行家小玉，很高兴和您通话！想了解景区什么问题，直接说就行～", true);
+    const name = isXiaomeiAvatar ? "小美" : isStarcloudAvatar ? "诗仙·李白" : "旅行家小玉";
+    speak(`您好，我是${name}，很高兴和您通话！想了解景区什么问题，直接说就行～`, true);
   };
 
   const handleNewChat = async () => {
@@ -805,28 +858,11 @@ export function QAScreen() {
     await audio.play();
   };
 
-  const speak = async (text: string, force = false) => {
-    // 默认静音：AI 回复仅文本返回，不调用语音合成，保证低时延；通话中始终开启语音
-    if (!ttsEnabled && !force && !inCall) return;
-    stopAudio();
-
-    const cleanedText = text.replace(/\[情感[:：][^\]]+\]/g, "").trim();
-    if (!cleanedText) return;
-
-    // 诗仙 / 小美（魔珐星云具身智能体）：优先使用星云内置语音与 3D 动作播报，未就绪时回退原有 TTS 链路
-    if (isStarcloudAvatar) {
-      const spoken = isXiaomeiAvatar ? speakWithXiaomei(cleanedText) : speakWithXingyun(cleanedText);
-      if (spoken) {
-        setIsSynthesizing(false);
-        setAvatarState("speaking");
-        return;
-      }
-    }
-
+  /** 项目自有语音链路：SophNet CosyVoice-v2，失败回退浏览器 Web Speech */
+  const playLocalSpeech = async (cleanedText: string) => {
     setIsSynthesizing(true);
     const currentOpt = resolveVoiceOption(selectedVoiceId);
 
-    // 主链路：SophNet CosyVoice-v2，按当前选中的音色合成，切换后立即生效
     try {
       const res = await request("/api/qa/tts", {
         method: "POST",
@@ -856,6 +892,46 @@ export function QAScreen() {
       console.warn("SophNet TTS unavailable, falling back to Web Speech:", err);
       speakWithWebSpeech(cleanedText, currentOpt);
     }
+  };
+
+  /**
+   * 星云播报「无声」兜底：星云 speak 只是把文本交给服务端，
+   * 若该驱动应用（小美）没有配置语音合成，服务端会静默返回，表现为"切换后没声音"。
+   * 这里在超时内没有收到「语音开始播放」事件时，改用项目自有 TTS 保证有声。
+   */
+  const armXingyunSilentFallback = (cleanedText: string, profile: "shixian" | "xiaomei") => {
+    clearXingyunSilentTimer();
+    xingyunVoiceStartedRef.current = false;
+    xingyunSilentTimerRef.current = window.setTimeout(() => {
+      xingyunSilentTimerRef.current = null;
+      if (xingyunVoiceStartedRef.current) return;
+      // 先打断星云这条静默的播报，避免与本地语音叠加
+      interruptXingyun(profile);
+      void playLocalSpeech(cleanedText);
+    }, 3000);
+  };
+
+  const speak = async (text: string, force = false) => {
+    // 默认静音：AI 回复仅文本返回，不调用语音合成，保证低时延；通话中始终开启语音
+    if (!ttsEnabled && !force && !inCall) return;
+    stopAudio();
+
+    const cleanedText = text.replace(/\[情感[:：][^\]]+\]/g, "").trim();
+    if (!cleanedText) return;
+
+    // 诗仙 / 小美（魔珐星云具身智能体）：优先使用星云内置语音与 3D 动作播报，未就绪时回退原有 TTS 链路
+    if (isStarcloudAvatar) {
+      const xingyunProfile = isXiaomeiAvatar ? "xiaomei" as const : "shixian" as const;
+      const spoken = isXiaomeiAvatar ? speakWithXiaomei(cleanedText) : speakWithXingyun(cleanedText, xingyunProfile);
+      if (spoken) {
+        setIsSynthesizing(false);
+        setAvatarState("speaking");
+        if (isXiaomeiAvatar) armXingyunSilentFallback(cleanedText, xingyunProfile);
+        return;
+      }
+    }
+
+    await playLocalSpeech(cleanedText);
   };
 
   /* ── 通话语音输入：SiliconFlow TeleSpeechASR + 静音自动结束 ── */
@@ -1012,17 +1088,18 @@ export function QAScreen() {
     voiceStartingRef.current = true;
     window.setTimeout(() => { voiceStartingRef.current = false; }, 500);
 
-    // 「诗仙 / 小美」：走魔珐星云自带语音识别
+    // 「诗仙 / 小美」：走魔珐星云自带语音识别（按当前形象指定 profile）
     if (isStarcloudAvatar) {
+      const xingyunProfile = isXiaomeiAvatar ? "xiaomei" as const : "shixian" as const;
       if (recording) {
         xingyunListeningRef.current = false;
         setRecording(false);
-        await stopXingyunASR();
+        await stopXingyunASR(xingyunProfile);
         return;
       }
       stopAudio();
-      interruptXingyun();
-      const ok = await startXingyunASR();
+      interruptXingyun(xingyunProfile);
+      const ok = await startXingyunASR(xingyunProfile);
       if (!ok) {
         toast.error("星云语音识别启动失败，请稍后重试", { id: VOICE_TOAST_ID, duration: 2400 });
         return;
@@ -1034,7 +1111,7 @@ export function QAScreen() {
         if (!xingyunListeningRef.current) return;
         xingyunListeningRef.current = false;
         setRecording(false);
-        stopXingyunASR();
+        stopXingyunASR(xingyunProfile);
       }, 15000);
       return;
     }
@@ -1339,7 +1416,10 @@ export function QAScreen() {
           ══════════════════════════════════════════════ */}
       <div className="flex flex-col md:hidden transition-all duration-500 overflow-hidden"
         style={{
-          height: "calc(100svh - 56px - env(safe-area-inset-bottom, 0px))",
+          // 键盘弹出时按可视视口高度收窄，避免输入区被键盘顶起后数字人遮挡内容
+          height: keyboardHeight > 0
+            ? `${keyboardHeight}px`
+            : "calc(100svh - 56px - env(safe-area-inset-bottom, 0px))",
           background: bgImage
             ? `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.5)), url(${bgImage})`
             : "linear-gradient(180deg,#131C18 0%,#1A2520 45%,#0E1710 100%)",
@@ -1357,7 +1437,7 @@ export function QAScreen() {
               {loading ? "正在思考回答…" : (isSynthesizing ? "正在合成语音播放" : (avatarState === "speaking" ? "正在语音伴游解说中..." : (ttsEnabled ? "旅行家Pro导览官 · 在线" : "语音播报已关闭 · 在线")))}
             </span>
           </div>
-          <div className="flex flex-col items-end gap-2.5 relative z-30">
+          <div className="flex flex-col items-end gap-2.5 relative z-[60]">
             <div className="flex gap-2 relative z-30">
             <motion.button whileTap={{ scale: 0.85 }} onClick={(e) => { e.stopPropagation(); triggerHaptic(); setShowBgMenu(!showBgMenu); setShowPersonaMenu(false); }}
               title="切换背景"
@@ -1518,8 +1598,12 @@ export function QAScreen() {
           </div>
         </div>
 
-        {/* Avatar zone */}
-        <div className={`flex-1 flex flex-col items-center justify-center px-4 relative min-h-0 pb-36 ${isStarcloudAvatar ? "z-[45]" : ""}`}>
+        {/* Avatar zone：对话展开时收缩上移，避免数字人遮挡气泡与输入区 */}
+        <div className={`flex-1 flex flex-col items-center justify-center px-4 relative min-h-0 pb-36 transition-all duration-300 ${isStarcloudAvatar ? "z-[45]" : ""}`}
+          style={{
+            transform: chatExpanded && messages.length > 1 ? "translateY(-8%) scale(0.78)" : undefined,
+            transformOrigin: "center 40%",
+          }}>
           <div className="absolute inset-0 pointer-events-none"
             style={{ background: "radial-gradient(ellipse 60% 50% at 50% 40%,rgba(79,111,82,0.12) 0%,transparent 70%)" }} />
           {spotName && (
@@ -1531,8 +1615,8 @@ export function QAScreen() {
           )}
           {!isDesktop && <DigitalAvatar state={avatarState} size="hero" audioElement={audioRef.current} avatarStyle={selectedStyle} />}
 
-          {/* 摄像头小窗：默认开启，通话/导览界面均显示（9:16 右上角可拖动） */}
-          {videoChatEnabled && (
+          {/* 摄像头小窗：仅在语音通话中自动开启（导览界面不请求摄像头权限） */}
+          {inCall && videoChatEnabled && (
             <VideoCallPreview active width={72} height={128} className="top-2 right-2" />
           )}
         </div>
@@ -1554,7 +1638,7 @@ export function QAScreen() {
 
         {/* Input zone — 通话中隐藏快捷提问与输入框，原位替换为通话控制面板 */}
         {inCall ? (
-          <div className="flex-shrink-0 px-3 pb-[56px] pt-2 relative z-40">
+          <div className="flex-shrink-0 px-3 pb-[56px] pt-2 relative z-[60]">
             <VoiceCallDock
               recording={recording}
               recognizing={recognizing}
@@ -1565,7 +1649,7 @@ export function QAScreen() {
             />
           </div>
         ) : (
-        <div className="flex-shrink-0 px-3 pb-8 pt-2 relative z-40">
+        <div className="flex-shrink-0 px-3 pb-8 pt-2 relative z-[60]">
           {/* Quick prompts */}
           <div className="flex items-center gap-2 overflow-x-auto scrollbar-none mb-2.5 px-1">
             {["历史典故", "门票价格", "游览路线", "避堵推荐", "特色小吃", "拍照打卡"].map((p) => (
@@ -1678,7 +1762,7 @@ export function QAScreen() {
             style={{ background: bgImage ? "none" : "radial-gradient(ellipse 80% 60% at 50% 35%,rgba(79,111,82,0.14) 0%,transparent 70%)" }} />
 
           {/* Desktop Left Panel Floating Controls */}
-          <div className="absolute top-8 left-4 right-4 flex justify-between items-center z-30 pointer-events-auto">
+          <div className="absolute top-8 left-4 right-4 flex justify-between items-center z-[60] pointer-events-auto">
             <div className="text-[11px] font-medium tracking-wide bg-black/40 backdrop-blur px-3 py-1 rounded-full border border-white/10 flex items-center gap-2" style={{ color: (loading || isSynthesizing) ? "#D2A053" : "rgba(255,255,255,0.75)" }}>
               <span className={`w-2 h-2 rounded-full ${(loading || isSynthesizing) ? "bg-[#D2A053] animate-ping" : "bg-[#34C759]"}`} />
               <span>{loading ? "正在思考回答…" : (isSynthesizing ? "正在合成语音播放" : (avatarState === "speaking" ? "正在语音伴游解说中..." : (ttsEnabled ? "旅行家Pro导览官 · 在线" : "语音播报已关闭 · 在线")))}</span>
@@ -1751,8 +1835,8 @@ export function QAScreen() {
           <div className="relative z-10 flex flex-col items-center px-6 w-full animate-fade-in">
             {isDesktop && <DigitalAvatar state={avatarState} size="desktop-hero" audioElement={audioRef.current} avatarStyle={selectedStyle} />}
 
-            {/* 摄像头小窗：默认开启（9:16 右上角可拖动） */}
-            {videoChatEnabled && (
+            {/* 摄像头小窗：仅在语音通话中自动开启（导览界面不请求摄像头权限） */}
+            {inCall && videoChatEnabled && (
               <VideoCallPreview active width={84} height={150} className="top-[100px] right-3" />
             )}
 

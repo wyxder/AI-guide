@@ -1052,4 +1052,16 @@ script[data-nf-variant] {
   display: none !important;
 }
 
+/* 星云 SDK 追加到 body 的字幕/挂件层：同样隐藏，避免悬浮层拦截页面点击 */
+body > .avatar-sdk-widget-container {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+/* 星云画布仅作视觉展示，不参与交互，避免覆盖顶部按钮的点击区域 */
+.xingyun-avatar-stage,
+.xingyun-avatar-stage * {
+  pointer-events: none !important;
+}
+
 

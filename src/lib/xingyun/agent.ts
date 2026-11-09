@@ -38,6 +38,7 @@ interface XingyunStore {
   mountingToken: number;
   conversationListeners: Set<(state: AgentConversationState) => void>;
   asrListeners: Set<(result: AgentASRResult) => void>;
+  voiceStartListeners: Set<() => void>;
 }
 
 export interface XingyunMountHandlers {
@@ -57,6 +58,7 @@ function getStore(): XingyunStore {
       mountingToken: 0,
       conversationListeners: new Set(),
       asrListeners: new Set(),
+      voiceStartListeners: new Set(),
     };
   }
   return scope.__XINGYUN_STORE__;
@@ -82,6 +84,23 @@ export function subscribeXingyunASR(cb: (result: AgentASRResult) => void): () =>
 function emitASR(result: AgentASRResult) {
   getStore().asrListeners.forEach((cb) => {
     try { cb(result); } catch { /* ignore listener errors */ }
+  });
+}
+
+/**
+ * 订阅「语音真正开始播放」事件。
+ *
+ * 星云 speak 只是把文本发给服务端，若该驱动应用没有配置语音合成（例如小美），
+ * 服务端会静默返回、既不发声也不报错；上层可用本事件判断是否需要用自有 TTS 兜底。
+ */
+export function subscribeXingyunVoiceStart(cb: () => void): () => void {
+  getStore().voiceStartListeners.add(cb);
+  return () => getStore().voiceStartListeners.delete(cb);
+}
+
+function emitVoiceStart() {
+  getStore().voiceStartListeners.forEach((cb) => {
+    try { cb(); } catch { /* ignore listener errors */ }
   });
 }
 
@@ -146,6 +165,10 @@ export async function mountXingyunAgent(
     gatewayServer,
     onMessage(error: { code?: string | number; message?: string }) {
       handlers.onError?.(`渲染异常 ${error?.code ?? ""} ${error?.message ?? ""}`.trim());
+    },
+    // 由 SDK 在服务端语音帧真正开始播放时回调，用于判断本次 speak 是否真的有声
+    onVoiceStateChange(state: string) {
+      if (state === "start") emitVoiceStart();
     },
     agentCallbacks: {
       onAgentStateChange(state: AgentState) {
@@ -215,14 +238,25 @@ export function isXingyunAgentReady(profile?: XingyunAgentProfile): boolean {
   return !!runnableAgent(profile);
 }
 
-/** 用数字人自己的语音与动作播报文本；返回 false 时应回退到原有 TTS 链路 */
+/** 星云 speak 需要 SSML 文本；纯文本在部分应用（如小美）下不会发声 */
+function toSSML(text: string): string {
+  const trimmed = text.trim();
+  if (/^<speak[\s>]/i.test(trimmed)) return trimmed;
+  const escaped = trimmed
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return `<speak>${escaped}</speak>`;
+}
+
 export function speakWithXingyun(text: string, profile?: XingyunAgentProfile): boolean {
   const content = text.trim();
   const agent = runnableAgent(profile);
   if (!content || !agent) return false;
   try {
-    agent.speak(content, true, true);
-    return true;
+    const speakId = agent.speak(toSSML(content), true, true);
+    // 返回空 speakId 说明本次播报未被服务端接收，交给上层回退到原有 TTS
+    return typeof speakId === "string" ? speakId.length > 0 : true;
   } catch {
     return false;
   }
