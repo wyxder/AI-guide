@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin, Heart, Clock, Settings, MessageSquare,
@@ -17,6 +17,7 @@ import { request } from "@/lib/api/request";
 import { toast } from "sonner";
 import { getLocalScenicImage } from "@/lib/scenic-image";
 import { NATIONAL_SPOTS } from "@/lib/data/national-spots";
+import { PROVINCE_BY_CITY, TravelFootprintMap, TravelRadarChart } from "@/components/ui/TravelReportVisuals";
 import { DEFAULT_VOICE_ID, resolveVoiceOption, VOICE_OPTIONS } from "@/lib/voice/presets";
 
 const SPRING = { type: "spring" as const, stiffness: 280, damping: 35 };
@@ -76,7 +77,7 @@ export function ProfileScreen() {
   const [showInterestsModal, setShowInterestsModal] = useState(false);
   const [favTabFilter, setFavTabFilter] = useState<string>("all");
   const [vipSelectedTier, setVipSelectedTier] = useState<string>("year");
-  const [selectedPosterSpot, setSelectedPosterSpot] = useState<any>(null);
+  const [showReportPoster, setShowReportPoster] = useState(false);
   const [allSpots, setAllSpots] = useState<any[]>([]);
 
   // User Points & Simulated Payment States
@@ -251,6 +252,87 @@ export function ProfileScreen() {
   const spotCount = new Set(visits.map(v => v.spotId).filter(Boolean)).size;
   const favCount = favorites.length;
   const totalVisits = visits.length;
+
+  // ── 旅行报告数据推导：城市 / 省份足迹 + 五维偏好 ──
+  const reportData = useMemo(() => {
+    const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, Math.round(value)));
+    const citySet = new Set<string>();
+    const provinceSet = new Set<string>();
+    const visitedNames: string[] = [];
+    const hits = { history: 0, nature: 0, family: 0, highlight: 0 };
+
+    visits.forEach((visit) => {
+      if (!visit.spotId) return;
+      const localSpot = allSpots.find((s) => Number(s.id) === Number(visit.spotId));
+      const rawName: string = localSpot?.name || "";
+      if (rawName) visitedNames.push(rawName);
+      const normalized = rawName.replace(/\s/g, "");
+
+      const national =
+        NATIONAL_SPOTS.find((n) => n.id === Number(visit.spotId)) ||
+        (normalized
+          ? NATIONAL_SPOTS.find((n) => {
+              const target = n.name.replace(/\s/g, "");
+              return normalized.includes(target) || target.includes(normalized);
+            })
+          : undefined);
+
+      if (!national) return;
+      citySet.add(national.city);
+      const province = PROVINCE_BY_CITY[national.city];
+      if (province) provinceSet.add(province);
+      if (national.category === "history" || national.category === "cultural") hits.history += 1;
+      else if (national.category === "nature") hits.nature += 1;
+      else hits.family += 1;
+      if (/夜景|网红|打卡|出片|地标|美食|ins/.test(national.tags.join(""))) hits.highlight += 1;
+    });
+
+    const isDemo = citySet.size === 0;
+    if (isDemo) {
+      ["成都", "重庆", "北京", "上海", "西安", "杭州"].forEach((city) => {
+        citySet.add(city);
+        const province = PROVINCE_BY_CITY[city];
+        if (province) provinceSet.add(province);
+      });
+    }
+
+    // 常驻城市也计入足迹
+    const regionParts = profileRegion.split(/[\s,，/]+/).filter(Boolean);
+    const homeCity = regionParts[regionParts.length - 1];
+    if (homeCity) {
+      citySet.add(homeCity);
+      const province = PROVINCE_BY_CITY[homeCity];
+      if (province) provinceSet.add(province);
+    }
+
+    const visitedCities = Array.from(citySet);
+    const visitedProvinces = Array.from(provinceSet);
+    const spotTotal = Math.max(spotCount, visitedNames.length, isDemo ? 6 : 0);
+
+    const radarValues = [
+      { label: "历史文化", value: isDemo ? 86 : clamp(52 + hits.history * 12, 45, 98) },
+      { label: "山水自然", value: isDemo ? 78 : clamp(50 + hits.nature * 14, 45, 98) },
+      { label: "亲子休闲", value: isDemo ? 68 : clamp(48 + hits.family * 13, 42, 96) },
+      { label: "网红打卡", value: isDemo ? 90 : clamp(50 + hits.highlight * 11, 45, 97) },
+      { label: "深度探索", value: isDemo ? 74 : clamp(45 + spotTotal * 8, 45, 96) },
+    ];
+
+    const score = clamp(68 + visitedProvinces.length * 4 + spotTotal * 3, 60, 99);
+    const grade = score >= 95 ? "S+" : score >= 88 ? "S" : score >= 78 ? "A" : "B";
+    const milestone = Math.round(spotTotal * 46 + visitedCities.length * 320);
+
+    return {
+      isDemo,
+      visitedCities,
+      visitedProvinces,
+      spotTotal,
+      radarValues,
+      score,
+      grade,
+      milestone,
+      favoriteCity: visitedCities[0] || homeCity || "成都",
+    };
+  }, [visits, allSpots, profileRegion, spotCount]);
 
   // Clear cache action
   const handleClearCache = () => {
@@ -2147,136 +2229,188 @@ export function ProfileScreen() {
         )}
       </AnimatePresence>
 
-      {/* Travel Assessment & Publicity Poster Modal ("查看行程评估报告") */}
+      {/* Travel Report Modal ("查看行程评估报告") */}
       <AnimatePresence>
         {showTravelReportModal && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md" onClick={() => setShowTravelReportModal(false)}>
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md" onClick={() => setShowTravelReportModal(false)}>
             <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              initial={{ scale: 0.94, opacity: 0, y: 24 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              exit={{ scale: 0.94, opacity: 0, y: 24 }}
               transition={SPRING}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg max-h-[88vh] bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col text-zinc-800 border border-zinc-200"
+              className="relative w-full max-w-lg max-h-[90vh] rounded-[26px] overflow-hidden flex flex-col text-white bg-[#070D18] border border-sky-400/25 shadow-[0_30px_90px_-24px_rgba(14,165,233,0.55)]"
             >
-              {/* Report Header Banner */}
-              <div className="relative p-6 bg-gradient-to-br from-[#7C3AED] via-[#6D28D9] to-[#4C1D95] text-white flex-shrink-0">
-                <button
-                  onClick={() => setShowTravelReportModal(false)}
-                  className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+              {/* Header */}
+              <div className="relative flex-shrink-0 overflow-hidden bg-[radial-gradient(130%_130%_at_8%_-20%,#0E7490_0%,#0B2B48_48%,#070D18_100%)] px-5 pt-5 pb-4">
+                <div
+                  className="pointer-events-none absolute inset-0 opacity-20"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(rgba(125,211,252,0.55) 1px, transparent 1px), linear-gradient(90deg, rgba(125,211,252,0.55) 1px, transparent 1px)",
+                    backgroundSize: "28px 28px",
+                  }}
+                />
+                <div className="pointer-events-none absolute -right-10 -top-14 h-40 w-40 rounded-full bg-cyan-400/20 blur-3xl" />
 
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-white/20 border border-white/30 backdrop-blur flex items-center justify-center text-yellow-300">
-                    <Trophy className="w-6 h-6" />
+                <div className="relative flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-300/40 bg-cyan-400/15 text-cyan-200 shadow-[0_0_24px_-4px_rgba(34,211,238,0.8)]">
+                      <Trophy className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <span className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-2 py-0.5 text-[9.5px] font-bold tracking-wider text-cyan-200">
+                        多模态 AI 智游评估
+                      </span>
+                      <h3 className="mt-1 text-[19px] font-extrabold leading-tight" style={{ fontFamily: "var(--font-noto-serif)" }}>
+                        我的全国旅行报告
+                      </h3>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-[10px] font-black text-purple-200 bg-white/10 px-2.5 py-0.5 rounded-full border border-white/20">
-                      多模态AI智游评估
-                    </span>
-                    <h3 className="text-xl font-extrabold tracking-tight mt-1" style={{ fontFamily: "var(--font-noto-serif)" }}>
-                      个人行程评估报告
-                    </h3>
-                  </div>
+                  <button
+                    onClick={() => setShowTravelReportModal(false)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-sky-200 transition hover:bg-white/15 active:scale-90"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
 
-                {/* Score badge */}
-                <div className="mt-5 p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-between">
+                {/* Stats */}
+                <div className="relative mt-4 grid grid-cols-4 gap-2">
+                  {[
+                    { label: "打卡景点", value: reportData.spotTotal, unit: "处" },
+                    { label: "涉足城市", value: reportData.visitedCities.length, unit: "座" },
+                    { label: "点亮省份", value: reportData.visitedProvinces.length, unit: "个" },
+                    { label: "累计里程", value: reportData.milestone, unit: "km" },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-xl border border-white/10 bg-white/[0.06] px-1.5 py-2 text-center backdrop-blur">
+                      <p className="text-[15px] font-black leading-none text-cyan-200">
+                        {item.value}
+                        <span className="ml-0.5 text-[9px] font-bold text-sky-300/80">{item.unit}</span>
+                      </p>
+                      <p className="mt-1 text-[9.5px] font-medium text-sky-200/70">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Score */}
+                <div className="relative mt-3 flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.05] px-3.5 py-2.5 backdrop-blur">
                   <div>
-                    <span className="text-xs text-purple-200 font-medium">综合探索等级</span>
-                    <h4 className="text-lg font-black text-white">98分 · 资深文旅探索家</h4>
+                    <p className="text-[10px] font-semibold tracking-wide text-sky-300/80">综合探索力指数</p>
+                    <p className="mt-0.5 text-sm font-extrabold text-white">
+                      {reportData.score} 分 ·{" "}
+                      {reportData.score >= 95
+                        ? "资深文旅探索家"
+                        : reportData.score >= 88
+                        ? "深度旅行家"
+                        : reportData.score >= 78
+                        ? "进阶漫游者"
+                        : "旅行新星"}
+                    </p>
                   </div>
-                  <div className="w-12 h-12 rounded-full bg-yellow-400 text-purple-950 font-black text-lg flex items-center justify-center shadow-lg border-2 border-white">
-                    S+
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-amber-500 text-base font-black text-[#3B2408] shadow-[0_0_20px_-2px_rgba(251,191,36,0.8)]">
+                    {reportData.grade}
                   </div>
                 </div>
               </div>
 
-              {/* Report Content Body */}
-              <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                {/* AI Advice Summary */}
-                <div className="p-4 rounded-2xl bg-purple-50 border border-purple-100 space-y-2">
-                  <h4 className="font-extrabold text-xs text-purple-900 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                    AI 伴游智能分析结论
-                  </h4>
-                  <p className="text-xs text-purple-800 leading-relaxed font-medium">
-                    根据您最近打卡的 <strong>{spotCount || 5}</strong> 大景点及漫游轨迹，您偏爱包含深厚文史底蕴与拍照热搜的地标景观。系统为您量身生成专属的景区打卡宣传海报！
-                  </p>
-                </div>
+              {/* Body */}
+              <div className="flex-1 space-y-3.5 overflow-y-auto px-4 py-4">
+                <TravelFootprintMap
+                  visitedProvinces={reportData.visitedProvinces}
+                  visitedCities={reportData.visitedCities}
+                />
 
-                {/* Poster Showcase Section */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-extrabold text-sm text-zinc-900">打卡景点宣传海报</h4>
-                    <span className="text-[10px] text-zinc-400">点击景点生成高清晰海报</span>
+                <TravelRadarChart values={reportData.radarValues} />
+
+                {/* Footprint chips */}
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3.5">
+                  <div className="mb-2 flex items-center justify-between">
+                    <h4 className="flex items-center gap-1.5 text-[13px] font-extrabold tracking-wide text-white">
+                      <MapPin className="h-3.5 w-3.5 text-cyan-300" />
+                      足迹档案
+                    </h4>
+                    {reportData.isDemo && (
+                      <span className="rounded-full bg-amber-300/10 px-2 py-0.5 text-[9px] font-bold text-amber-200/90">
+                        示例数据 · 打卡后自动同步
+                      </span>
+                    )}
                   </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { id: 10011, name: "洪崖洞民俗风貌区", img: "/images/spots/10011.webp", tag: "夜景首选" },
-                      { id: 10001, name: "故宫博物院", img: "/images/spots/10001.webp", tag: "帝都胜景" },
-                      { id: 10005, name: "东方明珠广播电视塔", img: "/images/spots/10005.webp", tag: "时尚地标" },
-                      { id: 10067, name: "李子坝轻轨穿楼", img: "/images/spots/10067.webp", tag: "魔幻城际" },
-                    ].map((posterSpot) => (
-                      <div
-                        key={posterSpot.id}
-                        onClick={() => setSelectedPosterSpot(posterSpot)}
-                        className="group relative rounded-2xl overflow-hidden border border-zinc-200 shadow-sm cursor-pointer hover:shadow-md transition-all"
+                  <div className="flex flex-wrap gap-1.5">
+                    {reportData.visitedProvinces.map((province) => (
+                      <span
+                        key={province}
+                        className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-2.5 py-1 text-[10px] font-bold text-cyan-100"
                       >
-                        <div className="h-32 w-full relative">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={posterSpot.img} alt={posterSpot.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                          <span className="absolute top-2 left-2 bg-black/60 backdrop-blur-xs text-[8.5px] text-white px-2 py-0.5 rounded-full font-bold">
-                            {posterSpot.tag}
-                          </span>
-                        </div>
-                        <div className="p-2.5 bg-white flex items-center justify-between">
-                          <span className="text-xs font-extrabold text-zinc-800 truncate">{posterSpot.name}</span>
-                          <Share2 className="w-3.5 h-3.5 text-purple-600 group-hover:scale-110 transition-transform" />
-                        </div>
-                      </div>
+                        {province}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {reportData.visitedCities.map((city) => (
+                      <span
+                        key={city}
+                        className="rounded-full border border-amber-300/25 bg-amber-300/10 px-2.5 py-1 text-[10px] font-semibold text-amber-100/90"
+                      >
+                        {city}
+                      </span>
                     ))}
                   </div>
                 </div>
 
-                {/* Poster Generator Container */}
-                {selectedPosterSpot && (
-                  <div className="pt-2">
-                    <PosterGenerator
-                      data={{
-                        userName: displayName,
-                        userAvatar: profileAvatar,
-                        spotsVisited: spotCount || 5,
-                        favoriteSpot: selectedPosterSpot.name,
-                        date: new Date().toLocaleDateString("zh-CN"),
-                        badge: selectedPosterSpot.tag || "文旅打卡"
-                      }}
-                      onClose={() => setSelectedPosterSpot(null)}
-                    />
-                  </div>
-                )}
+                {/* AI conclusion */}
+                <div className="rounded-2xl border border-emerald-400/20 bg-[linear-gradient(135deg,rgba(16,185,129,0.18),rgba(56,189,248,0.08))] p-3.5">
+                  <h4 className="flex items-center gap-1.5 text-[12px] font-extrabold text-emerald-200">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    AI 伴游智能分析结论
+                  </h4>
+                  <p className="mt-1.5 text-[11.5px] leading-relaxed font-medium text-emerald-50/85">
+                    你已点亮 <strong className="text-emerald-200">{reportData.visitedProvinces.length}</strong> 个省级行政区、
+                    <strong className="text-emerald-200">{reportData.visitedCities.length}</strong> 座城市，累计打卡
+                    <strong className="text-emerald-200">{reportData.spotTotal}</strong> 处景点。偏好维度中
+                    {[...reportData.radarValues].sort((a, b) => b.value - a.value)[0].label} 表现最突出，
+                    {reportData.isDemo
+                      ? "继续出发即可解锁真实足迹与专属海报。"
+                      : "建议下一站探索更多元的主题目的地，丰富你的旅行画像。"}
+                  </p>
+                </div>
               </div>
 
-              {/* Bottom Action Footer */}
-              <div className="p-4 border-t border-zinc-100 bg-zinc-50 flex gap-2 justify-end flex-shrink-0">
+              {/* Footer */}
+              <div className="flex-shrink-0 border-t border-white/10 bg-[#0A1422] px-4 pt-3.5 pb-[calc(env(safe-area-inset-bottom,14px)+14px)]">
                 <button
-                  onClick={() => {
-                    toast.success("行程评估报告已生成并可随时下载分享！");
-                    setShowTravelReportModal(false);
-                  }}
-                  className="w-full py-3 rounded-xl bg-[#7C3AED] text-white font-extrabold text-xs shadow-md hover:bg-[#6D28D9] active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  onClick={() => setShowReportPoster(true)}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 via-sky-500 to-indigo-500 py-3.5 text-sm font-extrabold text-white shadow-[0_10px_30px_-10px_rgba(14,165,233,0.9)] transition active:scale-[0.98]"
                 >
-                  <Share2 className="w-4 h-4" />
-                  生成并保存全部宣传海报
+                  <Share2 className="h-4 w-4" />
+                  生成并分享旅行海报
                 </button>
+                <p className="mt-2 text-center text-[9.5px] font-medium text-sky-300/50">
+                  海报含全国足迹地图与偏好雷达，可保存相册或一键分享
+                </p>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
+      {/* 旅行报告分享海报 */}
+      <AnimatePresence>
+        {showReportPoster && (
+          <PosterGenerator
+            data={{
+              userName: displayName,
+              userAvatar: profileAvatar,
+              spotsVisited: reportData.spotTotal,
+              favoriteSpot: reportData.favoriteCity,
+              date: new Date().toLocaleDateString("zh-CN"),
+              badge: `${reportData.grade} 级探索家 · 点亮${reportData.visitedProvinces.length}省`,
+            }}
+            onClose={() => setShowReportPoster(false)}
+          />
+        )}
+      </AnimatePresence>
+
 
       {/* Dedicated My Favorites Modal ("我的收藏") */}
       <AnimatePresence>

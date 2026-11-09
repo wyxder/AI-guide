@@ -81,7 +81,7 @@ export function VideoCallPreview({
       dragMomentum={false}
       dragElastic={0.06}
       whileDrag={{ scale: 1.04, boxShadow: "0 14px 32px rgba(0,0,0,0.5)" }}
-      className={`absolute z-30 overflow-hidden rounded-[18px] bg-black/40 ${className}`}
+      className={`absolute z-30 pointer-events-auto overflow-hidden rounded-[18px] bg-black/40 ${className}`}
       style={{
         width,
         height,

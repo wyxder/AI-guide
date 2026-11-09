@@ -527,7 +527,7 @@ function DigitalAvatarComponent({ state, size = "md", audioElement, avatarStyle 
       : px * 1.12;
 
     return (
-      <div className="relative flex flex-col items-center select-none">
+      <div className="relative flex flex-col items-center select-none pointer-events-none">
         {/* Outer ambient glow */}
         <motion.div className="absolute rounded-full pointer-events-none"
           style={{ width: avatarWidth + 60, height: avatarHeight + 60, top: -30, left: -30,

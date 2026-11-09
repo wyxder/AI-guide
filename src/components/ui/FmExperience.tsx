@@ -76,6 +76,13 @@ export function FmExperience({ variant = "page", initialView = "interests", onBa
     setFmQueue(ids.filter(id => FM_TRACK_MAP[id]));
   }, [selectedInterests]);
 
+  // 退出伴游FM（关闭弹层或离开页面）时自动停止播放，避免后台继续出声
+  useEffect(() => {
+    return () => {
+      pauseFm();
+    };
+  }, []);
+
   const playTrack = (index: number, autoPlay = true) => {
     const track = playlist[index];
     if (!track) return;

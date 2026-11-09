@@ -213,7 +213,7 @@ export function PosterGenerator({ data, onClose }: PosterGeneratorProps) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex flex-col justify-end"
+      className="fixed inset-0 z-[140] flex flex-col justify-end"
       style={{ background: "rgba(0,0,0,0.7)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
       <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}

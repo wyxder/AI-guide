@@ -1428,7 +1428,7 @@ export function QAScreen() {
         }}>
 
         {/* Top bar */}
-        <div className="flex items-center justify-between px-4 pb-3 flex-shrink-0 relative z-30 pointer-events-auto"
+        <div className="flex items-center justify-between px-4 pb-3 flex-shrink-0 relative z-[70] pointer-events-auto"
           style={{ paddingTop: "calc(env(safe-area-inset-top,44px) + 24px)" }}>
           <div className="flex items-center gap-2">
             <motion.div animate={{ backgroundColor: (loading || isSynthesizing) ? "#D2A053" : "#34C759" }}
@@ -1545,7 +1545,8 @@ export function QAScreen() {
             <span className="text-[11px] font-black tracking-wider">新建聊天</span>
           </motion.button>
 
-          {/* 视频聊天开关 — 默认开启，可点击关闭 */}
+          {/* 视频聊天开关 — 仅在语音通话界面显示 */}
+          {inCall && (
           <motion.button
             whileTap={{ scale: 0.92 }}
             onClick={(e) => {
@@ -1567,6 +1568,7 @@ export function QAScreen() {
               视频聊天{videoChatEnabled ? "" : "（已关）"}
             </span>
           </motion.button>
+          )}
 
             {/* Background Dropdown Menu */}
             {showBgMenu && (
@@ -1599,7 +1601,7 @@ export function QAScreen() {
         </div>
 
         {/* Avatar zone：对话展开时收缩上移，避免数字人遮挡气泡与输入区 */}
-        <div className={`flex-1 flex flex-col items-center justify-center px-4 relative min-h-0 pb-36 transition-all duration-300 ${isStarcloudAvatar ? "z-[45]" : ""}`}
+        <div className={`flex-1 flex flex-col items-center justify-center px-4 relative min-h-0 pb-36 transition-all duration-300 pointer-events-none ${isStarcloudAvatar ? "z-[45]" : ""}`}
           style={{
             transform: chatExpanded && messages.length > 1 ? "translateY(-8%) scale(0.78)" : undefined,
             transformOrigin: "center 40%",
@@ -1886,6 +1888,7 @@ export function QAScreen() {
                 >
                   <Plus className="w-3.5 h-3.5" /> 新建聊天
                 </button>
+                {inCall && (
                 <button
                   onClick={() => {
                     setVideoChatEnabled((v) => !v);
@@ -1900,6 +1903,7 @@ export function QAScreen() {
                   {videoChatEnabled ? <Video className="w-3.5 h-3.5" /> : <VideoOff className="w-3.5 h-3.5" />}
                   视频聊天{videoChatEnabled ? "" : "（已关）"}
                 </button>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
