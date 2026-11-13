@@ -14,79 +14,7 @@ const Live2DViewer = dynamic(() => import("@/components/ui/Live2DViewer"), { ssr
 // Animation Spring Config
 const SPRING = { type: "spring" as const, stiffness: 100, damping: 20 };
 
-// 1. User Personas Data
-const PERSONAS = [
-  {
-    id: "elder",
-    title: "银发暖心旅伴",
-    role: "60岁+ 银发长者",
-    icon: "🌸",
-    tag: "适老关物 · 大字缓速",
-    desc: "针对中老年游客的无障碍设计，提供大字号播报、舒缓语音与平坦休憩路线。",
-    themeColor: "#EC4899",
-    bgGradient: "from-pink-500/10 via-rose-500/5 to-transparent",
-    borderColor: "border-pink-200 hover:border-pink-400",
-    badgeBg: "bg-pink-50 text-pink-600 border-pink-200",
-    features: ["超大字号清晰读", "舒缓温和语速", "无陡坡平坦路线"],
-    sliders: [
-      { name: "字体大小关怀", value: 95 },
-      { name: "防摔舒适指数", value: 90 },
-    ],
-  },
-  {
-    id: "child",
-    title: "童趣家庭伴游",
-    role: "亲子家庭与儿童",
-    icon: "🍬",
-    tag: "卡通拟音 · 趣味问答",
-    desc: "卡通数字人化身探险队长，将历史知识转化为童话故事与趣味闯关问答。",
-    themeColor: "#F59E0B",
-    bgGradient: "from-amber-500/10 via-yellow-500/5 to-transparent",
-    borderColor: "border-amber-200 hover:border-amber-400",
-    badgeBg: "bg-amber-50 text-amber-600 border-amber-200",
-    features: ["卡通数字人音色", "启发式科普问答", "洗手间游乐点串联"],
-    sliders: [
-      { name: "故事化趣味度", value: 92 },
-      { name: "服务点密集度", value: 95 },
-    ],
-  },
-  {
-    id: "scholar",
-    title: "深度文史行者",
-    role: "文史古建爱好者",
-    icon: "📜",
-    tag: "考证典故 · 学术解说",
-    desc: "深度挖掘历史古迹的前世今生，提供学术级考证、文献引用与建筑美学剖析。",
-    themeColor: "#10B981",
-    bgGradient: "from-emerald-500/10 via-teal-500/5 to-transparent",
-    borderColor: "border-emerald-200 hover:border-emerald-400",
-    badgeBg: "bg-emerald-50 text-emerald-600 border-emerald-200",
-    features: ["历代典故学术考证", "古建筑结构拆解", "深度人文探寻路线"],
-    sliders: [
-      { name: "历史考证深度", value: 96 },
-      { name: "学术严谨指数", value: 92 },
-    ],
-  },
-  {
-    id: "speed",
-    title: "特种兵极致打卡",
-    role: "独立青年与摄友",
-    icon: "⚡",
-    tag: "用时最少 · 极致出片",
-    desc: "算法定制“用时最少、打卡最全、光线最佳”路线，动态避堵高频精讲。",
-    themeColor: "#3B82F6",
-    bgGradient: "from-blue-500/10 via-indigo-500/5 to-transparent",
-    borderColor: "border-blue-200 hover:border-blue-400",
-    badgeBg: "bg-blue-50 text-blue-600 border-blue-200",
-    features: ["出片最佳光线机位", "即时避堵路线重构", "3分钟要点精炼"],
-    sliders: [
-      { name: "时间紧凑指数", value: 98 },
-      { name: "出片胜率预测", value: 94 },
-    ],
-  },
-];
-
-// 2. Competitive Analysis Chart Metrics & Paths
+// Competitive Analysis Chart Metrics & Paths
 // Center: (150, 150), Radius: 100
 // Metrics: Q&A (0 deg), Cost (72 deg), Personalization (144 deg), Speed (216 deg), Depth (288 deg)
 const RADAR_METRICS = [
@@ -343,7 +271,6 @@ export default function WelcomePage() {
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
             <a href="#intro" className="hover:text-[#4F6F52] transition-colors">项目简介</a>
-            <a href="#persona" className="hover:text-[#4F6F52] transition-colors">用户画像</a>
             <a href="#feature" className="hover:text-[#4F6F52] transition-colors">特色功能</a>
             <a href="#comp" className="hover:text-[#4F6F52] transition-colors">竞品分析</a>
             <a href="#reviews" className="hover:text-[#4F6F52] transition-colors">游客评价</a>
@@ -385,7 +312,6 @@ export default function WelcomePage() {
               className="absolute top-20 left-0 right-0 bg-white border-b border-[#E6E2D8] py-6 px-8 flex flex-col gap-4 shadow-xl z-50 md:hidden"
             >
               <a href="#intro" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b border-[#FAF8F5] text-base font-semibold">项目简介</a>
-              <a href="#persona" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b border-[#FAF8F5] text-base font-semibold">用户画像</a>
               <a href="#feature" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b border-[#FAF8F5] text-base font-semibold">特色功能</a>
               <a href="#comp" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b border-[#FAF8F5] text-base font-semibold">竞品分析</a>
               <a href="#reviews" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b border-[#FAF8F5] text-base font-semibold">游客评价</a>
@@ -440,7 +366,7 @@ export default function WelcomePage() {
             transition={{ ...SPRING, delay: 0.2 }}
             className="text-base md:text-lg leading-relaxed text-[#8F9F8F] max-w-2xl mx-auto lg:mx-0"
           >
-            一款面向（C端游客 + B端运营）AI 数字人导游与智慧运营Agent。集成高德地图IP，满血 DeepSeek-V4-Flash，打造全国热门景点攻略、伴游FM、VR 3D识景、 RAG 景区知识检索、行程智能规划与运营服务。
+            一款基于HarmonyOS的面向（C端游客 + B端景区）AI 数字人导游与智慧运营平台。通过集成高德地图IP，3D情感数字人交互、伴游FM、VR拍照识景、 RAG 知识库检索、行程智能规划等技术，联合B 端提供运营数据大屏、知识库管理与AI决策等服务，为游客打造沉浸式数字人导游，也助力景区运营降本增效。
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -488,7 +414,7 @@ export default function WelcomePage() {
             </p>
           </div>
 
-          {/* Feature Cards Container - Mobile Swipe Strip (matching PERSONAS layout) / Desktop Interactive Accordion */}
+          {/* Feature Cards Container - Mobile Swipe Strip / Desktop Interactive Accordion */}
           <div className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-4 md:gap-4 items-stretch h-[460px] sm:h-[500px] md:h-[540px] pb-4 pt-2 -mx-6 px-6 md:mx-0 md:px-0">
             {[
               {
@@ -544,7 +470,7 @@ export default function WelcomePage() {
                 title: "旅游打卡报告",
                 shortTitle: ["旅游", "打卡", "报告"],
                 desc: "一键自动生成高质感专属旅游打卡海报与出游报告，定格美好旅途瞬间。",
-                bgImage: "/image/2.webp",
+                bgImage: "/image/1.png",
                 widget: {
                   tag: "Travel Report AI",
                   text: "“AI已为您一键生成金牌打卡路线总结与专属出游分析报告。”",
@@ -556,7 +482,7 @@ export default function WelcomePage() {
                 title: "景区大屏与情感雷达",
                 shortTitle: ["情感", "雷达", "监测"],
                 desc: "景区管理后台支持游客情感指数雷达监测、高频热搜词云实时流计算及今日客流量科学预测。",
-                bgImage: "/image/3.webp",
+                bgImage: "/image/2.png",
                 widget: {
                   tag: "Emotion Radar",
                   text: "游客实时情绪指数 98.4%，高频词“绝美夜景”占比第一。",
@@ -579,7 +505,13 @@ export default function WelcomePage() {
                   {/* Background Image */}
                   <div
                     className="absolute inset-0 bg-cover bg-center transition-transform duration-700 ease-out scale-105"
-                    style={{ backgroundImage: `url(${f.bgImage})` }}
+                    style={{
+                      backgroundImage: `url(${f.bgImage})`,
+                      // 05 打卡报告为竖版长图，放大并底部对齐，把取景窗口进一步下移到地图区域
+                      ...(f.num === "05"
+                        ? { backgroundSize: "auto 165%", backgroundPosition: "center bottom" }
+                        : null),
+                    }}
                   />
 
                   {/* Soft Warm Gradient Overlay */}
@@ -797,97 +729,6 @@ export default function WelcomePage() {
           </div>
         </div>
       </section>
-
-      {/* User Personas (用户画像) */}
-      <section id="persona" className="py-20 bg-[#FAF8F5]/60 border-t border-[#E6E2D8] relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="text-center space-y-3 mb-14">
-            <span className="text-xs font-black tracking-[0.2em] text-[#4F6F52] uppercase block">
-              Profiles & Accessibility
-            </span>
-            <h3 className="text-3xl md:text-4xl font-black text-[#1E2522]" style={{ fontFamily: "var(--font-noto-serif)" }}>
-              千人千面 · 适老化与全人群智能感知
-            </h3>
-            <div className="w-12 h-1 rounded-full bg-[#4F6F52] mx-auto mt-2" />
-            <p className="text-sm text-[#8F9F8F] max-w-2xl mx-auto leading-relaxed">
-              针对银发长者、亲子家庭、文史学者与极致打卡客群，AI 智能感知识别，自动重构语音语速、界面字号与文化解说深度。
-            </p>
-          </div>
-
-          <div className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-4 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-6 items-stretch pb-4 md:pb-0 -mx-6 px-6 md:mx-0 md:px-0">
-            {PERSONAS.map((p) => (
-              <motion.div
-                key={p.id}
-                whileHover={{ y: -6 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                className={`w-[82vw] sm:w-[320px] md:w-auto flex-shrink-0 md:flex-shrink snap-center p-6 rounded-3xl bg-white border ${p.borderColor} shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden group`}
-              >
-                {/* Subtle light accent background gradient */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${p.bgGradient} opacity-60 pointer-events-none`} />
-
-                <div className="space-y-4 relative z-10">
-                  {/* Card Top Header */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-3xl p-2 rounded-2xl bg-[#FAF8F5] border border-[#E6E2D8]/50 shadow-inner">
-                      {p.icon}
-                    </span>
-                    <span className={`text-[11px] font-extrabold px-3 py-1 rounded-full border ${p.badgeBg}`}>
-                      {p.role}
-                    </span>
-                  </div>
-
-                  <div>
-                    <h4 className="text-lg font-black text-[#1E2522] group-hover:text-[#4F6F52] transition-colors">
-                      {p.title}
-                    </h4>
-                    <p className="text-xs text-[#8F9F8F] font-semibold mt-1">
-                      {p.tag}
-                    </p>
-                  </div>
-
-                  <p className="text-xs leading-relaxed text-[#556358] min-h-[40px]">
-                    {p.desc}
-                  </p>
-
-                  {/* Bullet features */}
-                  <ul className="space-y-1.5 pt-2 border-t border-[#EEF2F0]">
-                    {p.features.map((feat, fIdx) => (
-                      <li key={fIdx} className="flex items-center gap-1.5 text-[11px] text-[#374151] font-medium">
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: p.themeColor }} />
-                        <span>{feat}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Bottom preference sliders */}
-                <div className="pt-4 mt-5 border-t border-[#EEF2F0] space-y-2.5 relative z-10">
-                  {p.sliders.map((s, sIdx) => (
-                    <div key={sIdx} className="space-y-1">
-                      <div className="flex justify-between text-[11px] font-bold text-[#4B5563]">
-                        <span>{s.name}</span>
-                        <span style={{ color: p.themeColor }}>{s.value}%</span>
-                      </div>
-                      <div className="w-full h-2 rounded-full bg-[#FAF8F5] border border-[#E6E2D8]/40 overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          whileInView={{ width: `${s.value}%` }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 1.0, delay: sIdx * 0.15 }}
-                          className="h-full rounded-full"
-                          style={{ backgroundColor: p.themeColor }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-
 
       {/* User Reviews (游客评价 - 轮播图) */}
       <section id="reviews" className="py-20 bg-white border-y border-[#E6E2D8] overflow-hidden">

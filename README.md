@@ -1,6 +1,6 @@
 
 # 🤖 旅行家Pro · 多模态AI数字人导游与智慧运营平台
-![Next.js](https://img.shields.io/badge/Next.js_16.2-black?style=flat-square&logo=next.js) ![React](https://img.shields.io/badge/React_19-61DAFB?style=flat-square&logo=react) ![TypeScript](https://img.shields.io/badge/TypeScript_5-3178C6?style=flat-square&logo=typescript) ![TailwindCSS](https://img.shields.io/badge/Tailwind_v4-06B6D4?style=flat-square&logo=tailwindcss) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL_16-4169E1?style=flat-square&logo=postgresql) ![Drizzle](https://img.shields.io/badge/Drizzle_ORM_0.45-C5F74F?style=flat-square) ![DeepSeek](https://img.shields.io/badge/DeepSeek_V4--Pro-00B4D8?style=flat-square) ![StepFun](https://img.shields.io/badge/StepFun_3.7--Flash-FF4500?style=flat-square) ![Vercel](https://img.shields.io/badge/Vercel-Deploy-000000?style=flat-square&logo=vercel) ![Bun](https://img.shields.io/badge/Bun_1.3-FBF0DF?style=flat-square&logo=bun) ![MCP](https://img.shields.io/badge/MCP_Protocol-7C3AED?style=flat-square) ![Live2D](https://img.shields.io/badge/Live2D-Cubism-FF6B9D?style=flat-square) ![Framer Motion](https://img.shields.io/badge/Framer_Motion_12-BB4BFF?style=flat-square&logo=framer)
+![Next.js](https://img.shields.io/badge/Next.js_16.2-black?style=flat-square&logo=next.js) ![React](https://img.shields.io/badge/React_19-61DAFB?style=flat-square&logo=react) ![TypeScript](https://img.shields.io/badge/TypeScript_5-3178C6?style=flat-square&logo=typescript) ![TailwindCSS](https://img.shields.io/badge/Tailwind_v4-06B6D4?style=flat-square&logo=tailwindcss) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL_16-4169E1?style=flat-square&logo=postgresql) ![Drizzle](https://img.shields.io/badge/Drizzle_ORM_0.45-C5F74F?style=flat-square) ![DeepSeek](https://img.shields.io/badge/DeepSeek_V4--Pro-00B4D8?style=flat-square) ![StepFun](https://img.shields.io/badge/StepFun_3.7--Flash-FF4500?style=flat-square) ![Vercel](https://img.shields.io/badge/Vercel-Deploy-000000?style=flat-square&logo=vercel) ![Bun](https://img.shields.io/badge/Bun_1.3-FBF0DF?style=flat-square&logo=bun) ![MCP](https://img.shields.io/badge/MCP_Protocol-7C3AED?style=flat-square) ![Live2D](https://img.shields.io/badge/Live2D-Cubism-FF6B9D?style=flat-square) ![Xmov](https://img.shields.io/badge/魔珐星云_3D-0E7490?style=flat-square) ![Framer Motion](https://img.shields.io/badge/Framer_Motion_12-BB4BFF?style=flat-square&logo=framer)
 
 ---
 
@@ -22,6 +22,9 @@
 
 - 🎯 **Hybrid RAG 混合检索**：0.7语义 + 0.3关键词重排算法，准确率&gt;95%，有效抑制大模型幻觉
 - 🎭 **情感驱动数字人**：LLM输出情感标签驱动 Live2D/SVG 表情状态机，实现有温度的交互体验
+- 🧑‍🎤 **双引擎数字人**：Live2D 2D 形象 + 魔珐星云 3D 具身智能体（默认「诗仙·李白」），支持语音通话式交互
+- 🎙️ **低延迟语音链路**：本地录音 + 自适应 VAD（0.75s 尾音判定）+ TeleSpeechASR，说完即出识别结果
+- 🗺️ **全国旅行足迹报告**：省级地图点亮 + 五维偏好雷达 + 一键生成分享海报
 - ♿ **三模式无障碍**：普通/银发/儿童模式，从UI字号到Prompt人设全链路深度适配
 - 🔗 **MCP生态互通**：行业首个景区场景的 MCP 协议实现，7个标准工具打通智能体生态
 - ⚡ **端到端 &lt;1.8s**：SSE流式输出 + 三级降级容灾（StepFun→DeepSeek→本地Embedding）
@@ -45,6 +48,7 @@
 | **Base UI** | `1.4.0` | 底层无样式组件原语，高度可定制化 |
 | **Lucide React** | `1.8.0` | 统一SVG图标系统，2000+精美图标 |
 | **Live2D Cubism** | `Core 5.x` | 2D数字人实时渲染引擎，10+免费角色模型 |
+| **魔珐星云 SDK** | `2.4.1` | 3D具身智能体渲染与语音驱动（诗仙·李白 / 小美），支持语音通话面板 |
 | **next-themes** | `0.4.6` | 主题切换系统，明暗模式支持 |
 | **Sonner** | `2.0.7` | 轻量Toast消息通知组件 |
 
@@ -71,7 +75,10 @@
 | **DeepSeek-V3.1** | Eazo SDK内置 | 备用对话与多模态模型 | 异常热切换降级容灾 |
 | **Eazo TTS** | Eazo AI平台 | 流式文本转语音 | 数字人语音播报、FM广播 |
 | **Eazo STT** | Eazo AI平台 | 语音转文字 | 语音输入交互、免手持操作 |
+| **SophNet CosyVoice-v2** | SophNet | 服务端语音合成（可配置音色） | AI 导游播报主通道 |
+| **TeleSpeechASR** | SiliconFlow | 语音识别（16k 单声道 WAV） | 语音输入、语音通话 |
 | **Text-Embedding-3** | Eazo API | 文本向量化 | RAG知识库语义检索 |
+| **魔珐星云 Agent** | 魔珐科技 | 3D具身智能体驱动（E2E control） | 诗仙/小美形象渲染、SSML 播报、音色切换 |
 | **Eazo SDK** | `0.19.0` | 一体化AI能力SDK | 授权、对话、语音、多模态统一接口 |
 | **MCP SDK** | `1.29.0` | Model Context Protocol | 开放Agent工具接口标准 |
 
@@ -169,14 +176,20 @@ AI-guide/
 │   │   ├── layout/                     # LayoutShell 响应式布局、Navigation、TopBar
 │   │   ├── screens/                    # 核心业务大组件（16个主场景）
 │   │   ├── ui/                         # 基础UI原子组件
-│   │   │   ├── DigitalAvatar.tsx       # SVG数字人（5种情绪状态）
+│   │   │   ├── DigitalAvatar.tsx       # SVG数字人（5种情绪状态）+ 多引擎形象调度
 │   │   │   ├── Live2DViewer.tsx        # Live2D模型渲染器
-│   │   │   ├── CameraRecognize.tsx     # VR拍照识别组件
+│   │   │   ├── CameraRecognize.tsx     # VR拍照识别组件（前后摄像头切换）
 │   │   │   ├── StoryModePlayer.tsx     # 故事模式播放器
-│   │   │   ├── PosterGenerator.tsx     # 海报生成器
+│   │   │   ├── VoiceCallDock.tsx       # 语音通话停靠面板（波形/视频小窗）
+│   │   │   ├── FmExperience.tsx        # 伴游FM播放器核心（退出自动暂停）
+│   │   │   ├── FmPlayerModal.tsx       # 首页FM弹层（与 /fm 同源内容）
+│   │   │   ├── TravelReportVisuals.tsx # 全国足迹地图 + 五维偏好雷达图（纯SVG）
+│   │   │   ├── PosterGenerator.tsx     # 海报生成器（三主题/保存/分享）
 │   │   │   ├── QRCodePanel.tsx         # 景点二维码面板
 │   │   │   ├── AvatarSelectorModal.tsx # 数字人形象切换
 │   │   │   └── ...                     # 其他基础组件
+│   │   ├── xingyun/                    # 魔珐星云3D数字人
+│   │   │   └── XingyunAvatar.tsx       # 星云渲染容器（加载/重试/memo隔离）
 │   │   ├── notifications/              # 消息通知系统
 │   │   └── user-profile/               # 用户资料卡片与同步
 │   │
@@ -204,6 +217,9 @@ AI-guide/
 │   │   ├── stepfun/                    # StepFun 对话
 │   │   ├── stepfun-audio/              # ASR / TTS
 │   │   ├── stepfun-vision/             # 图像识别
+│   │   ├── xingyun/                    # 魔珐星云3D数字人接入
+│   │   │   ├── agent.ts                # 单例Agent、SSML播报、语音开始订阅、可自愈告警
+│   │   │   └── preset.ts               # 「诗仙·李白」形象预设与判定
 │   │   ├── data/                       # 静态预置景点数据
 │   │   ├── protocol.ts                 # 协议与类型定义
 │   │   └── scenic-image.ts             # 景点图片映射
@@ -218,6 +234,7 @@ AI-guide/
 │   │   ├── characters/free/            # 10+免费角色模型
 │   │   └── backgrounds/                # 动态/静态背景素材
 │   ├── images/spots/                   # 景点图片（按景点ID命名）
+│   ├── data/china-provinces.json       # 本地省级边界数据（足迹地图，离线可用）
 │   ├── image/                          # 通用图片素材
 │   ├── background/                     # 城市背景图
 │   ├── uploads/                        # 用户上传文件
@@ -314,6 +331,8 @@ sequenceDiagram
 - **备用模型**：DeepSeek-V3.1（多模态通用能力）
 - **容错设计**：JSON解析失败时自动降级为纯文本截取
 
+**拍摄交互**：支持前后摄像头切换（`facingMode` 热切换）；识别弹窗居中、科技蓝青配色 + 彩虹进度条；识别结果自动语音精讲。
+
 ---
 
 ### 3. 🗺️ 智能路线规划 · 空间距离测算
@@ -325,16 +344,17 @@ sequenceDiagram
 | **路线描述生成** | DeepSeek-V4-Pro + JSON解析 | 诗意命名、东方园林风格简介 |
 | **距离测算** | @turf/turf 球面距离公式 | Great Circle Distance 算法 |
 | **地理围栏** | 经纬度实时监控 | 偏离路径动态纠偏提示 |
+| **卡片就地定位** | 高德地图 `setZoomAndCenter` + InfoWindow | 点击顶部热门景点卡片在当前地图定位，不跳外链/详情页 |
 
 ---
 
 ### 4. 🎵 景区FM语音广播
 
-FMScreen组件实现播客式文化广播体验：
-- 集成 Eazo TTS 流式语音合成
-- 可视化音频波形频谱动画（Framer Motion）
-- 支持后台播放与锁屏控制
-- 节目单：景区历史故事、文物趣闻、时令推荐
+FMScreen 与首页 `FmPlayerModal` 共用同一套 `FmExperience` 播放内核，实现播客式文化广播体验：
+- 集成 TTS 流式语音合成，点击即出声（音频预取）
+- 唱片机 + 节目单双区布局，可视化音频波形频谱动画（Framer Motion）
+- **退出即静音**：关闭弹层、按 ESC 或离开 `/fm` 页面时自动 `pauseFm()`，避免后台继续出声
+- 播放状态由 `<audio>` 的 `pause` 事件回写 store，重新打开不会出现"显示在播但没声音"
 
 ---
 
@@ -397,6 +417,36 @@ FMScreen组件实现播客式文化广播体验：
 
 ---
 
+### 9. 🧑‍🎤 3D 数字人与语音通话
+
+| 能力 | 实现 |
+| :--- | :--- |
+| **默认形象** | 「诗仙·李白」（魔珐星云 3D 具身智能体），可切换小美 / Live2D / SVG |
+| **渲染与播报** | `@xmov/avatar` 单例 Agent，容器内绝对定位画布，`speak(SSML)` 走 E2E control 消息 |
+| **有声兜底** | 订阅星云语音开始事件；3 秒未出声自动回退本地 TTS，规避服务端未配 TTS 的静默 |
+| **语音输入** | 本地 MediaRecorder（16k 单声道 / 32kbps opus）+ 自适应 VAD（静音 0.75s 结束、最长 12s）→ `/api/siliconflow/asr` |
+| **通话面板** | 仅「语音说话 + 挂断」两个按钮，声波只在录音时出现；视频小窗 9:16 可拖动、仅通话中开启 |
+
+**流畅度保障（20008「连续 300 帧身体渲染数据缺失」治理）**：
+- 星云 / Live2D / 视频形象关闭前端口型 rAF 循环，只保留内置 SVG 形象需要
+- `XingyunAvatar` 使用 `memo` 隔离，消息流式更新不再重渲染 SDK 子树
+- 星云画布不做位移/缩放与光晕动画；波形动画从 `height` 改为 `scaleY`，避免每帧重排
+- `.xingyun-avatar-stage` 增加 `contain: layout style` + `isolation: isolate`
+- SDK 的 20008 / 20009 / 60001 等可自愈告警只记录日志，不再弹出错误层打断用户
+
+---
+
+### 10. 🗺️ 旅行报告 · 全国足迹地图 / 雷达图 / 分享海报
+
+- **入口**：我的 → 查看行程评估报告
+- **地图**：优先加载本地 `public/data/china-provinces.json`（34 个省级边界），失败回退阿里 DataV，再失败降级为「足迹光点模式」
+- **投影**：等比例等距投影（不拉伸），到访省份渐变蓝发光 + 城市金色光点
+- **雷达**：历史文化 / 山水自然 / 亲子休闲 / 网红打卡 / 深度探索 五维，由到访景点分类与标签推导
+- **分享**：`PosterGenerator` 生成海报（暖金 / 水墨 / 夜景三主题），支持保存相册与 `navigator.share`
+- **兜底**：无真实数据时展示示例足迹并标注「示例数据」，打卡后自动切换真实统计
+
+---
+
 ## ⚙️ 部署指南
 
 ### 方式一：Windows一键脚本部署（开发环境推荐）
@@ -455,6 +505,26 @@ DEEPSEEK_PROXY_URL="your_deepseek_proxy_url"
 
 # === StepFun 视觉模型（可选） ===
 STEP_API_KEY="your_stepfun_api_key"
+
+# === GLM 文本 / 视觉（SophNet 网关，可选） ===
+GLM_API_KEY="your_glm_api_key"
+GLM_BASE_URL="your_glm_base_url"
+GLM_MODEL="glm-5.3-flash"
+
+# === SophNet CosyVoice 语音合成（数字人播报） ===
+SOPHNET_API_KEY="your_sophnet_api_key"
+SOPHNET_TTS_URL="your_sophnet_tts_url"
+SOPHNET_TTS_MODEL="cosyvoice-v2"
+SOPHNET_TTS_VOICE="your_tts_voice"
+
+# === SiliconFlow 语音识别（TeleSpeechASR） ===
+SILICONFLOW_API_KEY="your_siliconflow_api_key"
+SILICONFLOW_BASE_URL="https://api.siliconflow.cn/v1"
+
+# === 魔珐星云 3D 数字人（诗仙 / 小美） ===
+XINGYUN_APP_ID="your_xingyun_app_id"
+XINGYUN_APP_SECRET="your_xingyun_app_secret"
+XINGYUN_GATEWAY_SERVER="your_xingyun_gateway_server"
 
 # === Vercel Cron 安全密钥 ===
 CRON_SECRET="replace_with_a_long_random_string"
@@ -522,6 +592,8 @@ vercel --prod
 | 获取历史记录 | `/api/qa/chat` | `GET` | Token鉴权 | `[{role, content}]` | 当前用户对话历史 |
 | 文字转语音 | `/api/qa/tts` | `GET` | `text` | 音频流 | Eazo TTS数字人配音 |
 | 语音转文字 | `/api/qa/stt` | `POST` | `audio(File)` | `{text}` | 语音输入转文字 |
+| 语音识别（主链路） | `/api/siliconflow/asr` | `POST` | `file(File)` | `{text}` | TeleSpeechASR 识别，16k 单声道 |
+| 语音合成代理 | `/api/siliconflow/tts` | `POST` | `text`, `voice` | 音频流 | 数字人播报兜底通道 |
 | 满意度反馈 | `/api/qa/feedback` | `POST` | `qaLogId`, `rating(1/5)` | `{success}` | AI讲解好评/差评 |
 | 数字人激活状态 | `/api/qa/avatar-active` | `GET` | - | `{isActive}` | 数字人在线状态查询 |
 | 可用形象列表 | `/api/qa/avatars` | `GET` | - | `[{id, name, style}]` | 可切换的数字人形象 |
@@ -608,9 +680,9 @@ vercel --prod
 - 目标：WebXR协议，手机对准建筑即出现AR讲解图层
 - 技术：WebXR Device API + 陀螺仪/罗盘方向追踪
 
-**📞 3. WebRTC双向实时语音对话（VoIP）**
-- 当前：STT → LLM → TTS 单工链路
-- 目标：类微信通话体验，支持打断、连续对话
+**📞 3. WebRTC 全双工实时语音对话（VoIP）**
+- 当前：已上线「语音通话」面板（录音→ASR→LLM→TTS，单工，可打断播报）
+- 目标：类微信通话的连续对话体验，随时插话、自动断句
 - 技术：WebRTC + 流式ASR + 流式TTS
 
 **🎫 4. 真实票务与商户生态打通**
